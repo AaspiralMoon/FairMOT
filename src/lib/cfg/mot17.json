@@ -1,5 +1,5 @@
 {
-    "root":"/home/zyf/dataset",
+    "root":"/u40/xur86/datasets",
     "train":
     {
         "mot17":"./data/mot17.train"
