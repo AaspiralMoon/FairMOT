@@ -27,3 +27,4 @@ No param id.2.bias.If you see this, your model does not fully load the pre-train
   warnings.warn(warning.format(ret))
 /u40/xur86/anaconda3/envs/FairMOT/lib/python3.8/site-packages/torch/nn/parallel/_functions.py:64: UserWarning: Was asked to gather along dimension 0, but all input tensors were scalars; will instead unsqueeze and return a vector.
   warnings.warn('Was asked to gather along dimension 0, but all '
+Drop LR to 1e-05
