@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 import math
 import logging
+from re import A
 import numpy as np
 from os.path import join
 
@@ -283,13 +284,17 @@ class DLA(nn.Module):
             inplanes = planes
         return nn.Sequential(*modules)
 
-    def forward(self, x):
+    def forward(self, x, attention=True):
         y = []
         x = self.base_layer(x)
         for i in range(6):
-            x = getattr(self, 'level{}'.format(i))(x)
+            x = getattr(self, 'level{}'.format(i))(x)                                   # get activation map
             y.append(x)
-        return y
+        if not attention:
+            return y
+        else:
+            return y, [y[1], y[2], y[3], y[4], y[5]]                                    # forward return outputs of levels
+
 
     def load_pretrained_model(self, data='imagenet', name='dla34', hash='ba72cf86'):
         # fc = self.fc
@@ -312,6 +317,25 @@ def dla34(pretrained=True, **kwargs):  # DLA-34
                 block=BasicBlock, **kwargs)
     if pretrained:
         model.load_pretrained_model(data='imagenet', name='dla34', hash='ba72cf86')
+    return model
+
+def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
+  
+    print('Creating a half model as teacher model')
+    model = DLA([1, 1, 1, 2, 2, 1],
+                [8, 16, 32, 64, 128, 256],
+                block=BasicBlock, **kwargs)
+    if pretrained:
+        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/DLA-34 half_pre.pth.tar')
+    return model
+
+def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
+    print('Creating a quarter model as teacher model')
+    model = DLA([1, 1, 1, 2, 2, 1],
+                [4, 8, 16, 32, 64, 128],
+                block=BasicBlock, **kwargs)    
+    if pretrained:
+        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/DLA-34 quarter_pre.pth.tar')
     return model
 
 class Identity(nn.Module):
@@ -468,7 +492,7 @@ class DLASeg(nn.Module):
             self.__setattr__(head, fc)
 
     def forward(self, x):
-        x = self.base(x)
+        x, g = self.base(x)
         x = self.dla_up(x)
 
         y = []
@@ -479,7 +503,7 @@ class DLASeg(nn.Module):
         z = {}
         for head in self.heads:
             z[head] = self.__getattr__(head)(y[-1])
-        return [z]
+        return [z], g
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):

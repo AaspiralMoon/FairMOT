@@ -42,7 +42,7 @@ class MotLoss(torch.nn.Module):
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))
         self.s_id = nn.Parameter(-1.05 * torch.ones(1))
 
-    def forward(self, outputs, batch):
+    def forward(self, outputs, g_s, g_t, batch):
         opt = self.opt
         hm_loss, wh_loss, off_loss, id_loss = 0, 0, 0, 0
         for s in range(opt.num_stacks):
@@ -79,8 +79,9 @@ class MotLoss(torch.nn.Module):
 
         det_loss = opt.hm_weight * hm_loss + opt.wh_weight * wh_loss + opt.off_weight * off_loss
         if opt.multi_loss == 'uncertainty':
-            loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)
+            loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)                 # final loss
             loss *= 0.5
+            loss = loss + 1e-4                                                                            # loss_with_at = loss_total + loss_at
         else:
             loss = det_loss + 0.1 * id_loss
 
@@ -90,12 +91,12 @@ class MotLoss(torch.nn.Module):
 
 
 class MotTrainer(BaseTrainer):
-    def __init__(self, opt, model, optimizer=None):
-        super(MotTrainer, self).__init__(opt, model, optimizer=optimizer)
+    def __init__(self, opt, model, model_t, optimizer=None):
+        super(MotTrainer, self).__init__(opt, model, model_t, optimizer=optimizer)       # model init
 
     def _get_losses(self, opt):
         loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
-        loss = MotLoss(opt)
+        loss = MotLoss(opt)                                                     # calculate loss
         return loss_states, loss
 
     def save_result(self, output, batch, results):

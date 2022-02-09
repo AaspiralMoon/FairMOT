@@ -10,7 +10,7 @@ class opts(object):
   def __init__(self):
     self.parser = argparse.ArgumentParser()
     # basic experiment setting
-    self.parser.add_argument('task', default='mot', help='mot')
+    self.parser.add_argument('--task', default='mot', help='mot')
     self.parser.add_argument('--dataset', default='jde', help='jde')
     self.parser.add_argument('--exp_id', default='default')
     self.parser.add_argument('--test', action='store_true')
@@ -25,7 +25,7 @@ class opts(object):
                                   'in the exp dir if load_model is empty.') 
 
     # system
-    self.parser.add_argument('--gpus', default='2, 3',
+    self.parser.add_argument('--gpus', default='1',
                              help='-1 for CPU, use comma for multiple gpus')
     self.parser.add_argument('--num_workers', type=int, default=8,
                              help='dataloader threads. 0 for single-thread.')
@@ -47,7 +47,7 @@ class opts(object):
                              help='visualization threshold.')
     
     # model
-    self.parser.add_argument('--arch', default='dla_34', 
+    self.parser.add_argument('--arch', default='dla_34',                              # --arch dla-34
                              help='model architecture. Currently tested'
                                   'resdcn_34 | resdcn_50 | resfpndcn_34 |'
                                   'dla_34 | hrnet_18')
@@ -75,7 +75,7 @@ class opts(object):
                              help='drop learning rate by 10.')
     self.parser.add_argument('--num_epochs', type=int, default=30,
                              help='total training epochs.')
-    self.parser.add_argument('--batch_size', type=int, default=12,
+    self.parser.add_argument('--batch_size', type=int, default=1,
                              help='batch size')
     self.parser.add_argument('--master_batch_size', type=int, default=-1,
                              help='batch size on the master gpu.')
@@ -86,6 +86,9 @@ class opts(object):
     self.parser.add_argument('--trainval', action='store_true',
                              help='include validation in training and '
                                   'test on test set')
+    self.parser.add_argument('--attention', action='store_true', help='attention transfer or not')        # whether to use attention           
+    self.parser.add_argument('--load_model_t', default='/nfs/u40/xur86/FairMOT/models/fairmot_dla34.pth', help='teacher model path')                     # load teacher model
+    self.parser.add_argument('--arch_t', default='dla_34', help='teacher architecture')                   # teacher architecture
 
     # test
     self.parser.add_argument('--K', type=int, default=500,
@@ -122,7 +125,7 @@ class opts(object):
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
-                             default='../src/lib/cfg/data.json',
+                             default='/u40/xur86/FairMOT/src/lib/cfg/mot17.json',
                              help='load data from cfg')
     self.parser.add_argument('--data_dir', type=str, default='/u40/xur86/datasets')
 

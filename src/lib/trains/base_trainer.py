@@ -10,23 +10,25 @@ from utils.utils import AverageMeter
 
 
 class ModleWithLoss(torch.nn.Module):
-  def __init__(self, model, loss):
+  def __init__(self, model, model_t, loss):
     super(ModleWithLoss, self).__init__()
     self.model = model
+    self.model_t = model_t
     self.loss = loss
   
   def forward(self, batch):
-    outputs = self.model(batch['input'])
-    loss, loss_stats = self.loss(outputs, batch)
+    outputs, g_s = self.model(batch['input'])                          # student model forward and get output
+    _, g_t = self.model_t(batch['input'])                              # teacher model forward and get output
+    loss, loss_stats = self.loss(outputs, g_s, g_t, batch)             # loss calculation
     return outputs[-1], loss, loss_stats
 
 class BaseTrainer(object):
   def __init__(
-    self, opt, model, optimizer=None):
+    self, opt, model, model_t, optimizer=None):
     self.opt = opt
     self.optimizer = optimizer
     self.loss_stats, self.loss = self._get_losses(opt)
-    self.model_with_loss = ModleWithLoss(model, self.loss)
+    self.model_with_loss = ModleWithLoss(model, model_t, self.loss)
     self.optimizer.add_param_group({'params': self.loss.parameters()})
 
   def set_device(self, gpus, chunk_sizes, device):
@@ -64,16 +66,16 @@ class BaseTrainer(object):
         break
       data_time.update(time.time() - end)
 
-      for k in batch:
+      for k in batch:                                           # k = input, hm, reg_mask, etc.
         if k != 'meta':
           batch[k] = batch[k].to(device=opt.device, non_blocking=True)
 
-      output, loss, loss_stats = model_with_loss(batch)
+      output, loss, loss_stats = model_with_loss(batch)                 # loss calculation
       loss = loss.mean()
       if phase == 'train':
         self.optimizer.zero_grad()
         loss.backward()
-        self.optimizer.step()
+        self.optimizer.step()                                           # update weights
       batch_time.update(time.time() - end)
       end = time.time()
 

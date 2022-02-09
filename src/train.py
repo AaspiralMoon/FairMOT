@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from matplotlib.pyplot import pause
+
 import _init_paths
 
 import os
@@ -40,8 +42,11 @@ def main(opt):
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
 
     print('Creating model...')
-    model = create_model(opt.arch, opt.heads, opt.head_conv)
+    model = create_model(opt.arch, opt.heads, opt.head_conv)           # create student model
     optimizer = torch.optim.Adam(model.parameters(), opt.lr)
+    if (opt.attention):
+        model_t = create_model(opt.arch, opt.heads, opt.head_conv)  
+        model_t = load_model(model_t, opt.load_model_t)                           # load teacher model
     start_epoch = 0
 
     # Get dataloader
@@ -57,10 +62,10 @@ def main(opt):
 
     print('Starting training...')
     Trainer = train_factory[opt.task]
-    trainer = Trainer(opt, model, optimizer)
+    trainer = Trainer(opt, model, model_t, optimizer)                     # MotTrainer, student train with teacher
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
-    if opt.load_model != '':
+    if opt.load_model != '':                                     # load pretrained model
         model, optimizer, start_epoch = load_model(
             model, opt.load_model, trainer.optimizer, opt.resume, opt.lr, opt.lr_step)
 
@@ -96,3 +101,5 @@ if __name__ == '__main__':
     torch.cuda.set_device(2)
     opt = opts().parse()
     main(opt)
+    import time
+    time.sleep(1000)
