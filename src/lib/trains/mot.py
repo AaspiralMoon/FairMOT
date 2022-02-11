@@ -16,6 +16,7 @@ from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
+from utils.utils import att_loss, sum_loss
 from .base_trainer import BaseTrainer
 
 
@@ -81,12 +82,20 @@ class MotLoss(torch.nn.Module):
         if opt.multi_loss == 'uncertainty':
             loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)                 # final loss
             loss *= 0.5
-            loss = loss + 1e-4                                                                            # loss_with_at = loss_total + loss_at
+            if opt.attention:
+                beta = 1e3/(g_t[0].size(0)*g_t[0].size(1))/opt.batch_size
+                print(beta)
+                for t in g_t:
+                    print(t.size())
+                for s in g_s:
+                    print(s.size())
+                at_loss = sum_loss([att_loss(x, y) for x, y in zip(g_s, g_t)])
+                loss = loss + 0.5*beta*at_loss      # loss_with_at = loss_total + loss_at
         else:
             loss = det_loss + 0.1 * id_loss
 
         loss_stats = {'loss': loss, 'hm_loss': hm_loss,
-                      'wh_loss': wh_loss, 'off_loss': off_loss, 'id_loss': id_loss}
+                      'wh_loss': wh_loss, 'off_loss': off_loss, 'id_loss': id_loss, 'at_loss':at_loss}
         return loss, loss_stats
 
 
@@ -95,7 +104,7 @@ class MotTrainer(BaseTrainer):
         super(MotTrainer, self).__init__(opt, model, model_t, optimizer=optimizer)       # model init
 
     def _get_losses(self, opt):
-        loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
+        loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss', 'at_loss']
         loss = MotLoss(opt)                                                     # calculate loss
         return loss_states, loss
 

@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import torch
 import numpy as np
+import torch.nn.functional as F
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -177,3 +178,17 @@ def encode_delta(gt_box_list, fg_anchor_list):
     dw = np.log(gw/pw)
     dh = np.log(gh/ph)
     return np.stack((dx, dy, dw, dh), axis=1)
+
+# attention loss
+def at(x):
+    return F.normalize(x.pow(2).mean(1).view(x.size(0), -1))
+
+
+def att_loss(x, y):
+    return (at(x) - at(y)).pow(2).mean()
+
+def sum_loss(x):
+    sum = 0
+    for i in x:
+        sum = sum + i
+    return sum

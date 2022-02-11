@@ -25,7 +25,7 @@ class opts(object):
                                   'in the exp dir if load_model is empty.') 
 
     # system
-    self.parser.add_argument('--gpus', default='1',
+    self.parser.add_argument('--gpus', default='2',
                              help='-1 for CPU, use comma for multiple gpus')
     self.parser.add_argument('--num_workers', type=int, default=8,
                              help='dataloader threads. 0 for single-thread.')
@@ -47,10 +47,10 @@ class opts(object):
                              help='visualization threshold.')
     
     # model
-    self.parser.add_argument('--arch', default='dla_34',                              # --arch dla-34
-                             help='model architecture. Currently tested'
+    self.parser.add_argument('--arch', default='half-dla_34',                              # --arch dla-34
+                             help='model architecture. Currently tested'              # student model: half/quarter-dla_34
                                   'resdcn_34 | resdcn_50 | resfpndcn_34 |'
-                                  'dla_34 | hrnet_18')
+                                  'dla_34 | half-dla_34 | quarter-dla_34 | hrnet_18')
     self.parser.add_argument('--head_conv', type=int, default=-1,
                              help='conv layer channels for output head'
                                   '0 for no conv layer'
@@ -75,7 +75,7 @@ class opts(object):
                              help='drop learning rate by 10.')
     self.parser.add_argument('--num_epochs', type=int, default=30,
                              help='total training epochs.')
-    self.parser.add_argument('--batch_size', type=int, default=1,
+    self.parser.add_argument('--batch_size', type=int, default=6,
                              help='batch size')
     self.parser.add_argument('--master_batch_size', type=int, default=-1,
                              help='batch size on the master gpu.')

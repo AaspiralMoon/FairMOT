@@ -17,8 +17,9 @@ class ModleWithLoss(torch.nn.Module):
     self.loss = loss
   
   def forward(self, batch):
-    outputs, g_s = self.model(batch['input'])                          # student model forward and get output
-    _, g_t = self.model_t(batch['input'])                              # teacher model forward and get output
+    outputs, g_s = self.model(batch['input'])                   # student model forward and get output
+    with torch.no_grad():
+       _, g_t = self.model_t(batch['input'])                              # teacher model forward and get output
     loss, loss_stats = self.loss(outputs, g_s, g_t, batch)             # loss calculation
     return outputs[-1], loss, loss_stats
 

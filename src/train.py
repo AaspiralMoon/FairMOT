@@ -45,7 +45,7 @@ def main(opt):
     model = create_model(opt.arch, opt.heads, opt.head_conv)           # create student model
     optimizer = torch.optim.Adam(model.parameters(), opt.lr)
     if (opt.attention):
-        model_t = create_model(opt.arch, opt.heads, opt.head_conv)  
+        model_t = create_model(opt.arch_t, opt.heads, opt.head_conv)  
         model_t = load_model(model_t, opt.load_model_t)                           # load teacher model
     start_epoch = 0
 
@@ -101,5 +101,4 @@ if __name__ == '__main__':
     torch.cuda.set_device(2)
     opt = opts().parse()
     main(opt)
-    import time
-    time.sleep(1000)
+
