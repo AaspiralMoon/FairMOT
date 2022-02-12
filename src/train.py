@@ -47,6 +47,8 @@ def main(opt):
     if (opt.attention):
         model_t = create_model(opt.arch_t, opt.heads, opt.head_conv)  
         model_t = load_model(model_t, opt.load_model_t)                           # load teacher model
+        print('Using attention...\nCreate teacher model: ' + opt.arch_t)
+    print('Create model: ' + opt.arch)
     start_epoch = 0
 
     # Get dataloader
@@ -62,7 +64,10 @@ def main(opt):
 
     print('Starting training...')
     Trainer = train_factory[opt.task]
-    trainer = Trainer(opt, model, model_t, optimizer)                     # MotTrainer, student train with teacher
+    if not opt.attention:
+        trainer = Trainer(opt, model, optimizer)                     # MotTrainer, student train with teacher
+    else:
+        trainer = Trainer(opt, model, optimizer, model_t) 
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
     if opt.load_model != '':                                     # load pretrained model

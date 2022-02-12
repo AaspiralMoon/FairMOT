@@ -10,26 +10,33 @@ from utils.utils import AverageMeter
 
 
 class ModleWithLoss(torch.nn.Module):
-  def __init__(self, model, model_t, loss):
+  def __init__(self, model, loss, attention=False, model_t=None):
     super(ModleWithLoss, self).__init__()
     self.model = model
-    self.model_t = model_t
     self.loss = loss
+    self.attention = attention
+    self.model_t = model_t
+
   
   def forward(self, batch):
-    outputs, g_s = self.model(batch['input'])                   # student model forward and get output
-    with torch.no_grad():
-       _, g_t = self.model_t(batch['input'])                              # teacher model forward and get output
-    loss, loss_stats = self.loss(outputs, g_s, g_t, batch)             # loss calculation
+    if not self.attention:
+      outputs = self.model(batch['input']) 
+      loss, loss_stats = self.loss(outputs, batch)             # loss calculation
+    else:
+      g_s, outputs = self.model(batch['input'], self.attention)                   # student model forward and get output
+      with torch.no_grad():
+        g_t, _ = self.model_t(batch['input'], self.attention)                              # teacher model forward and get output
+      loss, loss_stats = self.loss(outputs, batch, g_s, g_t) 
+
     return outputs[-1], loss, loss_stats
 
 class BaseTrainer(object):
   def __init__(
-    self, opt, model, model_t, optimizer=None):
+    self, opt, model, optimizer=None, model_t=None):
     self.opt = opt
     self.optimizer = optimizer
     self.loss_stats, self.loss = self._get_losses(opt)
-    self.model_with_loss = ModleWithLoss(model, model_t, self.loss)
+    self.model_with_loss = ModleWithLoss(model, self.loss, opt.attention, model_t)
     self.optimizer.add_param_group({'params': self.loss.parameters()})
 
   def set_device(self, gpus, chunk_sizes, device):

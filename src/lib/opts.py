@@ -25,7 +25,7 @@ class opts(object):
                                   'in the exp dir if load_model is empty.') 
 
     # system
-    self.parser.add_argument('--gpus', default='2',
+    self.parser.add_argument('--gpus', default='2, 3',
                              help='-1 for CPU, use comma for multiple gpus')
     self.parser.add_argument('--num_workers', type=int, default=8,
                              help='dataloader threads. 0 for single-thread.')
@@ -75,7 +75,7 @@ class opts(object):
                              help='drop learning rate by 10.')
     self.parser.add_argument('--num_epochs', type=int, default=30,
                              help='total training epochs.')
-    self.parser.add_argument('--batch_size', type=int, default=6,
+    self.parser.add_argument('--batch_size', type=int, default=12,
                              help='batch size')
     self.parser.add_argument('--master_batch_size', type=int, default=-1,
                              help='batch size on the master gpu.')
@@ -125,7 +125,7 @@ class opts(object):
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
-                             default='/u40/xur86/FairMOT/src/lib/cfg/mot17.json',
+                             default='/u40/xur86/FairMOT/src/lib/cfg/mot17_half.json',
                              help='load data from cfg')
     self.parser.add_argument('--data_dir', type=str, default='/u40/xur86/datasets')
 

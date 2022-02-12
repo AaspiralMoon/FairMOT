@@ -284,7 +284,7 @@ class DLA(nn.Module):
             inplanes = planes
         return nn.Sequential(*modules)
 
-    def forward(self, x, attention=True):
+    def forward(self, x, attention=False):
         y = []
         x = self.base_layer(x)
         for i in range(6):
@@ -293,8 +293,6 @@ class DLA(nn.Module):
         if not attention:
             return y
         else:
-            # for i in range(6):
-            #     print(y[i].size())
             return y, [y[0], y[1], y[2], y[3], y[4], y[5]]                                    # forward return outputs of levels
 
 
@@ -312,11 +310,11 @@ class DLA(nn.Module):
         self.load_state_dict(model_weights)
         # self.fc = fc
 
-    def load_pretrained_file(self,load_dir):                                             # load weights from keivan
+    def load_pretrained_file(self, load_dir):                                             # load weights from keivan
         if os.path.isfile(load_dir):
             print('Loading base models weights from: ', load_dir)    
             model_weights = torch.load(load_dir, map_location=torch.device('cpu'))
-            self.load_state_dict(model_weights['state_dict'])
+            self.load_state_dict(model_weights['state_dict'], strict=False)
         else:
             print('Loading dir for the base model was empty!')
 
@@ -332,8 +330,8 @@ def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
     model = DLA([1, 1, 1, 2, 2, 1],
                 [8, 16, 32, 64, 128, 256],
                 block=BasicBlock, **kwargs)
-    # if pretrained:
-        # model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/DLA-34 half_pre.pth.tar')
+    if pretrained:
+        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/half_pre.pth.tar')
     return model
 
 def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
@@ -341,7 +339,7 @@ def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
                 [4, 8, 16, 32, 64, 128],
                 block=BasicBlock, **kwargs)    
     if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/DLA-34 quarter_pre.pth.tar')
+        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/quarter_pre.pth.tar')
     return model
 
 class Identity(nn.Module):
@@ -497,20 +495,34 @@ class DLASeg(nn.Module):
                 fill_fc_weights(fc)
             self.__setattr__(head, fc)
 
-    def forward(self, x):
-        x, g = self.base(x)
-        x = self.dla_up(x)
+    def forward(self, x, attention=False):
+        if not attention:                                                          # without attention: output
+            x= self.base(x)
+            x = self.dla_up(x)
 
-        y = []
-        for i in range(self.last_level - self.first_level):
-            y.append(x[i].clone())
-        self.ida_up(y, 0, len(y))
+            y = []
+            for i in range(self.last_level - self.first_level):
+                y.append(x[i].clone())
+            self.ida_up(y, 0, len(y))
 
-        z = {}
-        for head in self.heads:
-            z[head] = self.__getattr__(head)(y[-1])
-        return [z], g
-    
+            z = {}
+            for head in self.heads:
+                z[head] = self.__getattr__(head)(y[-1])
+            return [z]
+
+        else:                                                                                 # with attention: output + g
+            g, x = self.base(x, attention)
+            x = self.dla_up(x)
+
+            y = []
+            for i in range(self.last_level - self.first_level):
+                y.append(x[i].clone())
+            self.ida_up(y, 0, len(y))
+
+            z = {}
+            for head in self.heads:
+                z[head] = self.__getattr__(head)(y[-1])
+            return g, [z]
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
   model = DLASeg('dla{}'.format(num_layers), heads,
