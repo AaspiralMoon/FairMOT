@@ -243,11 +243,6 @@ You can train FairMOT on custom dataset by following several steps bellow:
 3. Create a json file for your custom dataset in src/lib/cfg/. You need to specify the "root" and "train" keys in the json file. You can find some examples in src/lib/cfg/.
 4. Add --data_cfg '../src/lib/cfg/your_dataset.json' when training. 
 
-## Train with attention
-You can train FairMOT with attention mechanism by following serveral steps bellow:
-1. specify '--attention', 'load_model_t', 'arch_t', '--beta' in opts.py (Line 89-Line 92).
-2. run python train.py --exp_id your_expid --attention --data_cfg '../src/lib/cfg/mot17_half.json' --arch 'half-dla_34' --beta 1e7 to train dla_34 half model with teacher (original dla_34)
-3. run python train.py --exp_id your_expid --attention --data_cfg '../src/lib/cfg/mot17_half.json' --arch 'quarter-dla_34' --beta 1e6 to train dla_34 quarter model with teacher (original dla_34)
 ## Acknowledgement
 A large part of the code is borrowed from [Zhongdao/Towards-Realtime-MOT](https://github.com/Zhongdao/Towards-Realtime-MOT) and [xingyizhou/CenterNet](https://github.com/xingyizhou/CenterNet). Thanks for their wonderful works.
 
