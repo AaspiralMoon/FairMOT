@@ -84,7 +84,6 @@ class MotLoss(torch.nn.Module):
             loss *= 0.5
             if opt.attention:
                 beta = [opt.beta/(i.size(2)*i.size(3))/opt.batch_size for i in g_t]
-                print(beta)
                 at_loss = sum_loss([att_loss(x, y) for x, y in zip(g_s, g_t)], beta)         
                 loss = loss + at_loss      # loss_with_at = loss_total + loss_at
         else:
