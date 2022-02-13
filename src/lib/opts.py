@@ -89,6 +89,7 @@ class opts(object):
     self.parser.add_argument('--attention', action='store_true', help='attention transfer or not')        # whether to use attention           
     self.parser.add_argument('--load_model_t', default='/nfs/u40/xur86/FairMOT/models/fairmot_dla34.pth', help='teacher model path')                     # load teacher model
     self.parser.add_argument('--arch_t', default='dla_34', help='teacher architecture')                   # teacher architecture
+    self.parser.add_argument('--beta', default=1e7, help='hyper parameter for attention loss')
 
     # test
     self.parser.add_argument('--K', type=int, default=500,

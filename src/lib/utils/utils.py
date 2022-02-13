@@ -187,8 +187,8 @@ def at(x):
 def att_loss(x, y):
     return (at(x) - at(y)).pow(2).mean()
 
-def sum_loss(x):
+def sum_loss(x, beta):
     sum = 0
-    for i in x:
-        sum = sum + i
+    for a, b in zip(x, beta):
+        sum = sum + a*b*0.5
     return sum
