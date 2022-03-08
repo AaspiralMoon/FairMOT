@@ -239,7 +239,7 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='mot17_half_yolov5s',
+         exp_name='half-dla_34_mot17_half',
          show_image=False,
          save_images=False,
          save_videos=False)

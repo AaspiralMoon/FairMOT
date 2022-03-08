@@ -67,7 +67,7 @@ def main(opt):
     if not opt.attention:
         trainer = Trainer(opt, model, optimizer)                     # MotTrainer, student train with teacher
     else:
-        trainer = Trainer(opt, model, optimizer, model_t) 
+        trainer = Trainer(opt, model, optimizer, model_t)
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
     if opt.load_model != '':                                     # load pretrained model
