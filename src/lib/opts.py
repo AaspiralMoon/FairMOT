@@ -47,7 +47,7 @@ class opts(object):
                              help='visualization threshold.')
     
     # model
-    self.parser.add_argument('--arch', default='half-dla_34',                              # --arch dla-34
+    self.parser.add_argument('--arch', default='dla_34',                              # --arch dla-34
                              help='model architecture. Currently tested'              # student model: half/quarter-dla_34
                                   'resdcn_34 | resdcn_50 | resfpndcn_34 |'
                                   'dla_34 | half-dla_34 | quarter-dla_34 | hrnet_18')
@@ -126,9 +126,9 @@ class opts(object):
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
-                             default='/u40/xur86/FairMOT/src/lib/cfg/mot17_half.json',
+                             default='../src/lib/cfg/mot17_half.json',
                              help='load data from cfg')
-    self.parser.add_argument('--data_dir', type=str, default='/u40/xur86/datasets')
+    self.parser.add_argument('--data_dir', type=str, default='/nfs/u40/xur86/datasets')
 
     # loss
     self.parser.add_argument('--mse_loss', action='store_true',

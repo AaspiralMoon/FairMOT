@@ -1,15 +1,15 @@
 {
-    "root":"/u40/xur86/datasets",
+    "root":"/nfs/u40/xur86/datasets",
     "train":
     {
-        "mot17":"/u40/xur86/FairMOT/src/data/mot17.train"
+        "mot17":"./data/mot17.train"
     },
     "test_emb":
     {
-        "mot17":"/u40/xur86/FairMOT/src/data/mot17.train"
+        "mot17":"./data/mot17.train"
     },
     "test":
     {
-        "mot17":"/u40/xur86/FairMOT/src/data/mot17.train"
+        "mot17":"./data/mot17.train"
     }
 }

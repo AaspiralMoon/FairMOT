@@ -331,7 +331,7 @@ def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
                 [8, 16, 32, 64, 128, 256],
                 block=BasicBlock, **kwargs)
     if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/half_pre.pth.tar')
+        model.load_pretrained_file('../models/half_pre.pth.tar')
     return model
 
 def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
@@ -339,7 +339,7 @@ def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
                 [4, 8, 16, 32, 64, 128],
                 block=BasicBlock, **kwargs)    
     if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/attention-transfer/models/quarter_pre.pth.tar')
+        model.load_pretrained_file('../models/quarter_pre.pth.tar')
     return model
 
 class Identity(nn.Module):
