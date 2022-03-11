@@ -55,7 +55,7 @@ def test_det(
         batch_size=12,
         img_size=(1088, 608),
         iou_thres=0.5,
-        print_interval=40,
+        print_interval=1,
 ):
     data_cfg = opt.data_cfg
     f = open(data_cfg)
@@ -181,7 +181,6 @@ def test_det(
                                               conf=dets[:, 4],
                                               pred_cls=np.zeros_like(dets[:, 4]),  # detections[:, 6]
                                               target_cls=target_cls)
-
             # Accumulate AP per class
             AP_accum_count += np.bincount(AP_class, minlength=nC)
             AP_accum += np.bincount(AP_class, minlength=nC, weights=AP)
@@ -213,3 +212,4 @@ if __name__ == '__main__':
     opt = opts().init()
     with torch.no_grad():
         map = test_det(opt, batch_size=4)
+    print(map)

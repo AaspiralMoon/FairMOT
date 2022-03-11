@@ -1,5 +1,5 @@
 {
-    "root":"/nfs/u40/xur86/datasets",
+    "root":"/nfs/u40/xur86/projects/DeepScale/datasets",
     "train":
     {
         "mot17":"./data/mot17.train"
