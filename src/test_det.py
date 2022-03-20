@@ -10,7 +10,7 @@ import time
 import os
 import cv2
 
-from sklearn import metrics
+# from sklearn import metrics
 from scipy import interpolate
 import numpy as np
 from torchvision.transforms import transforms as T
@@ -21,6 +21,7 @@ from opts import opts
 from models.decode import mot_decode
 from utils.post_process import ctdet_post_process
 
+# python test_det.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_quarter_dla34/model_last.pth --arch quarter-dla_34
 
 def post_process(opt, dets, meta):
     dets = dets.detach().cpu().numpy()
@@ -56,6 +57,7 @@ def test_det(
         img_size=(1088, 608),
         iou_thres=0.5,
         print_interval=1,
+        exp_name='test'
 ):
     data_cfg = opt.data_cfg
     f = open(data_cfg)
@@ -84,11 +86,11 @@ def test_det(
     print('%11s' * 5 % ('Image', 'Total', 'P', 'R', 'mAP'))
     outputs, mAPs, mR, mP, TP, confidence, pred_class, target_class, jdict = \
         [], [], [], [], [], [], [], [], []
+    F1_scores = []
     AP_accum, AP_accum_count = np.zeros(nC), np.zeros(nC)
     for batch_i, (imgs, targets, paths, shapes, targets_len) in enumerate(dataloader):
         t = time.time()
         #seen += batch_size
-
         output = model(imgs.cuda())[-1]
         origin_shape = shapes[0]
         width = origin_shape[1]
@@ -106,7 +108,7 @@ def test_det(
         opt.K = 200
         detections, inds = mot_decode(hm, wh, reg=reg, ltrb=opt.ltrb, K=opt.K)
         # Compute average precision for each sample
-        targets = [targets[i][:int(l)] for i, l in enumerate(targets_len)]
+        targets = [targets[i][:int(l)] for i, l in enumerate(targets_len)]      
         for si, labels in enumerate(targets):
             seen += 1
             #path = paths[si]
@@ -181,6 +183,11 @@ def test_det(
                                               conf=dets[:, 4],
                                               pred_cls=np.zeros_like(dets[:, 4]),  # detections[:, 6]
                                               target_cls=target_cls)
+
+            # Comput F1-score
+            F1_score = 2*P*R / (P + R)
+            F1_scores.append(F1_score)
+
             # Accumulate AP per class
             AP_accum_count += np.bincount(AP_class, minlength=nC)
             AP_accum += np.bincount(AP_class, minlength=nC, weights=AP)
@@ -195,14 +202,23 @@ def test_det(
             mean_R = np.sum(mR) / (AP_accum_count + 1E-16)
             mean_P = np.sum(mP) / (AP_accum_count + 1E-16)
 
-        if batch_i % print_interval == 0:
-            # Print image mAP and running mean mAP
+        # if batch_i % print_interval == 0:
+        #     # Print image mAP and running mean mAP
+        #     print(('%11s%11s' + '%11.3g' * 4 + 's') %
+        #           (seen, dataloader.dataset.nF, mean_P, mean_R, mean_mAP, time.time() - t))
+
             print(('%11s%11s' + '%11.3g' * 4 + 's') %
-                  (seen, dataloader.dataset.nF, mean_P, mean_R, mean_mAP, time.time() - t))
+                   (seen, dataloader.dataset.nF, mean_P, mean_R, mean_mAP, time.time() - t))
     # Print mAP per class
     print('%11s' * 5 % ('Image', 'Total', 'P', 'R', 'mAP'))
 
     print('AP: %-.4f\n\n' % (AP_accum[0] / (AP_accum_count[0] + 1E-16)))
+
+    # with open(os.path.join(dataset_root, 'MOT17', 'images', 'results', '{}'.format(exp_name), 'mAP.txt'), 'w+') as f:                # save map for each image
+    #     np.savetxt(f, mAPs, '%.4f')
+
+    # with open(os.path.join(dataset_root, 'MOT17', 'images', 'results', '{}'.format(exp_name), 'F1_score.txt'), 'w+') as f:                # save map for each image
+    #     np.savetxt(f, F1_scores, '%.4f')
 
     # Return mAP
     return mean_mAP, mean_R, mean_P
@@ -211,5 +227,5 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     opt = opts().init()
     with torch.no_grad():
-        map = test_det(opt, batch_size=4)
+        map = test_det(opt, batch_size=1, exp_name='576_dla_34_mot17_half_hm', img_size=(576, 320))
     print(map)

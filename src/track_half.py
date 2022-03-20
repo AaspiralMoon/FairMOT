@@ -22,6 +22,7 @@ import datasets.dataset.jde as datasets
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
+# python track_half.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --arch dla_34 --gen_hm
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
@@ -45,9 +46,11 @@ def write_results(filename, results, data_type):
     logger.info('save results to {}'.format(filename))
 
 
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, gen_dir=None):
     if save_dir:
         mkdir_if_missing(save_dir)
+    if gen_dir:
+        mkdir_if_missing(gen_dir)
     tracker = JDETracker(opt, frame_rate=frame_rate)
     timer = Timer()
     results = []
@@ -63,9 +66,20 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         # run tracking
         timer.tic()
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
-        online_targets = tracker.update(blob, img0)
+
+        if opt.gen_dets:
+            len_dets, online_targets = tracker.update(blob, img0)
+            with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
+                np.savetxt(f, np.array(len_dets).reshape(1, -1), '%.1f')
+        elif opt.gen_hm:
+            hm, online_targets = tracker.update(blob, img0)
+            with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
+                np.savetxt(f, hm.squeeze().cpu().numpy(), '%.4f')
+        else: 
+            online_targets = tracker.update(blob, img0)
+
         online_tlwhs = []
-        online_ids = []
+        online_ids = []        
         #online_scores = []
         for t in online_targets:
             tlwh = t.tlwh
@@ -90,6 +104,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     # save results
     write_results(result_filename, results, data_type)
     #write_results_score(result_filename, results, data_type)
+
     return frame_id, timer.average_time, timer.calls
 
 
@@ -109,10 +124,15 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         logger.info('start seq: {}'.format(seq))
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
+        if opt.gen_hm:
+            gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
+        if opt.gen_dets:
+            gen_dir = os.path.join(result_root, '{}_dets'.format(seq))
+
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         nf, ta, tc = eval_seq(opt, dataloader, data_type, result_filename,
-                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
+                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, gen_dir=gen_dir)
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)

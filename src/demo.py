@@ -16,6 +16,7 @@ from track import eval_seq
 
 logger.setLevel(logging.INFO)
 
+# python demo.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --input-video ../videos/MOT16-03_10.mp4
 
 def demo(opt):
     result_root = opt.output_root if opt.output_root != '' else '.'

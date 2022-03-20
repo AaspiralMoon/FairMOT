@@ -373,7 +373,10 @@ class JDETracker(object):
         logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
         logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
-
+        if self.opt.gen_hm:                           # output heatmap
+            return hm, output_stracks
+        if self.opt.gen_dets:
+            return len(dets), output_stracks
         return output_stracks
 
 

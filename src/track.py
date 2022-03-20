@@ -74,13 +74,14 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     timer = Timer()
     results = []
     frame_id = 0
+    times = []
     #for path, img, img0 in dataloader:
     for i, (path, img, img0) in enumerate(dataloader):
         #if i % 8 != 0:
             #continue
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
-
+            times = np.append(times, timer.average_time)
         # run tracking
         timer.tic()
         if use_cuda:
@@ -114,6 +115,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     # save results
     write_results(result_filename, results, data_type)
     #write_results_score(result_filename, results, data_type)
+    print('Average Speed: {}'.format( 1. / max(1e-5, np.mean(times))))
     return frame_id, timer.average_time, timer.calls
 
 

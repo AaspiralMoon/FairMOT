@@ -123,12 +123,14 @@ class opts(object):
                              help='path to the input video')
     self.parser.add_argument('--output-format', type=str, default='video', help='video or text')
     self.parser.add_argument('--output-root', type=str, default='../demos', help='expected output root path')
+    self.parser.add_argument('--gen_hm', action='store_true', help='whether to generate heatmap')
+    self.parser.add_argument('--gen_dets', action='store_true', help='whether to generate detection numbers')  
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
                              default='../src/lib/cfg/mot17_half.json',
                              help='load data from cfg')
-    self.parser.add_argument('--data_dir', type=str, default='/nfs/u40/xur86/datasets')
+    self.parser.add_argument('--data_dir', type=str, default='/nfs/u40/xur86/projects/DeepScale/datasets')
 
     # loss
     self.parser.add_argument('--mse_loss', action='store_true',
@@ -230,9 +232,11 @@ class opts(object):
       if opt.reg_offset:
         opt.heads.update({'reg': 2})
       opt.nID = dataset.nID
-      opt.img_size = (1088, 608)
-      #opt.img_size = (864, 480)
-      #opt.img_size = (576, 320)
+      # opt.img_size = (1088, 608)
+      # opt.img_size = (864, 480)
+      # opt.img_size = (704, 384)
+      # opt.img_size = (640, 352)
+      opt.img_size = (576, 320)
     else:
       assert 0, 'task not defined!'
     print('heads', opt.heads)
