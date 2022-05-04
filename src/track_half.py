@@ -22,7 +22,7 @@ import datasets.dataset.jde as datasets
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
-# python track_half.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --arch dla_34 --gen_hm
+# python track_half.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --arch dla_34 --gen_hm --gen_dets
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
@@ -92,6 +92,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
+        
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
@@ -126,8 +127,10 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         if opt.gen_hm:
             gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
-        if opt.gen_dets:
+        elif opt.gen_dets:
             gen_dir = os.path.join(result_root, '{}_dets'.format(seq))
+        else:
+            gen_dir = None
 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
@@ -259,7 +262,7 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='test',
+         exp_name='864_half_5',
          show_image=False,
          save_images=False,
          save_videos=False)

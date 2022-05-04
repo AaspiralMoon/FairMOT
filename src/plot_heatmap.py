@@ -51,9 +51,9 @@ plt.subplot(5, 2, 8)
 plt.imshow(data4_new.cpu().numpy().squeeze(), cmap='hot')
 
 plt.subplot(5, 2, 9)
-plt.imshow(data4, cmap='hot')
+plt.imshow(data5, cmap='hot')
 plt.subplot(5, 2, 10)
-plt.imshow(data4_new.cpu().numpy().squeeze(), cmap='hot')
+plt.imshow(data5_new.cpu().numpy().squeeze(), cmap='hot')
 
 plt.show()
 plt.savefig('heatmaps_new.jpg')

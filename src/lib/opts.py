@@ -233,10 +233,10 @@ class opts(object):
         opt.heads.update({'reg': 2})
       opt.nID = dataset.nID
       # opt.img_size = (1088, 608)
-      # opt.img_size = (864, 480)
+      opt.img_size = (864, 480)
       # opt.img_size = (704, 384)
       # opt.img_size = (640, 352)
-      opt.img_size = (576, 320)
+      # opt.img_size = (576, 320)
     else:
       assert 0, 'task not defined!'
     print('heads', opt.heads)
