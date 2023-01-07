@@ -12,10 +12,10 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${fileDirname}",
-            "args":[
-               "--load_model", "/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_quarter_dla34/model_last.pth", 
-               "--arch", "quarter-dla_34"
-            ]
+            // "args":[
+            //    "--load_model", "/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_quarter_dla34/model_last.pth", 
+            //    "--arch", "quarter-dla_34"
+            // ]
         }
     ]
 }

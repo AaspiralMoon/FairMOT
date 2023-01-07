@@ -26,7 +26,8 @@ from opts import opts
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
-        save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
+        # save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
+        save_format = '{frame},{id},{x1},{y1},{w},{h},1,1,0\n'
     elif data_type == 'kitti':
         save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
     else:
@@ -46,7 +47,7 @@ def write_results(filename, results, data_type):
     logger.info('save results to {}'.format(filename))
 
 
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, gen_dir=None):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, gen_dir=None, interval=1):
     if save_dir:
         mkdir_if_missing(save_dir)
     if gen_dir:
@@ -59,6 +60,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     frame_id = int(len_all / 2)
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
+            continue
+        if frame_id % interval != 0:
+            frame_id += 1
             continue
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
@@ -92,7 +96,10 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        
+        if interval != 1:
+            for i in range(1, interval):
+                results.append((frame_id + 1 + i, online_tlwhs, online_ids))
+
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
@@ -110,7 +117,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 
 
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo',
-         save_images=False, save_videos=False, show_image=True):
+         save_images=False, save_videos=False, show_image=True, interval=1):
     logger.setLevel(logging.INFO)
     result_root = os.path.join(data_root, '..', 'results', exp_name)
     mkdir_if_missing(result_root)
@@ -135,7 +142,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         nf, ta, tc = eval_seq(opt, dataloader, data_type, result_filename,
-                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, gen_dir=gen_dir)
+                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, gen_dir=gen_dir, interval=interval)
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)
@@ -222,12 +229,13 @@ if __name__ == '__main__':
                       MOT17-14-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/test')
     if opt.val_mot17:
-        seqs_str = '''MOT17-02-SDP
-                      MOT17-04-SDP
-                      MOT17-05-SDP
-                      MOT17-09-SDP
-                      MOT17-10-SDP
-                      MOT17-11-SDP'''
+        # seqs_str = '''MOT17-02-SDP
+        #               MOT17-04-SDP
+        #               MOT17-05-SDP
+        #               MOT17-09-SDP
+        #               MOT17-10-SDP
+        #               MOT17-11-SDP'''
+        seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:
         seqs_str = '''Venice-2
@@ -262,7 +270,8 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='864_half_5',
+         exp_name='test3',
          show_image=False,
          save_images=False,
-         save_videos=False)
+         save_videos=False,
+         interval=1)
