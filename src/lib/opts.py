@@ -124,7 +124,7 @@ class opts(object):
     self.parser.add_argument('--output-format', type=str, default='video', help='video or text')
     self.parser.add_argument('--output-root', type=str, default='../demos', help='expected output root path')
     self.parser.add_argument('--gen_hm', action='store_true', help='whether to generate heatmap')
-    self.parser.add_argument('--gen_dets', action='store_true', help='whether to generate detection numbers')  
+    self.parser.add_argument('--gen_dets', action='store_true', help='whether to generate detection numbers')
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
@@ -232,11 +232,13 @@ class opts(object):
       if opt.reg_offset:
         opt.heads.update({'reg': 2})
       opt.nID = dataset.nID
-      # opt.img_size = (1088, 608)
+
+      opt.img_size = (1088, 608)
       # opt.img_size = (864, 480)
       # opt.img_size = (704, 384)
       # opt.img_size = (640, 352)
       # opt.img_size = (576, 320)
+
     else:
       assert 0, 'task not defined!'
     print('heads', opt.heads)

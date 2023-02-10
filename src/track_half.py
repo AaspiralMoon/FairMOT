@@ -26,8 +26,8 @@ from opts import opts
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
-        # save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
-        save_format = '{frame},{id},{x1},{y1},{w},{h},1,1,0\n'
+        save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
+        # save_format = '{frame},{id},{x1},{y1},{w},{h},1,1,0\n'
     elif data_type == 'kitti':
         save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
     else:
