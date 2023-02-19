@@ -270,7 +270,7 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='test3',
+         exp_name='test4',
          show_image=False,
          save_images=False,
          save_videos=False,

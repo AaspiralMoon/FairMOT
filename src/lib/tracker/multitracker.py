@@ -375,8 +375,8 @@ class JDETracker(object):
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
         if self.opt.gen_hm:                           # output heatmap
             return hm, output_stracks
-        if self.opt.gen_dets:
-            return len(dets), output_stracks
+        if self.opt.gen_dets:                         # output detection results
+            return dets, output_stracks
         return output_stracks
 
 

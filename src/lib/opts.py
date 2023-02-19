@@ -47,10 +47,10 @@ class opts(object):
                              help='visualization threshold.')
     
     # model
-    self.parser.add_argument('--arch', default='dla_34',                              # --arch dla-34
+    self.parser.add_argument('--arch', default='full-dla_34',                              # --arch dla-34
                              help='model architecture. Currently tested'              # student model: half/quarter-dla_34
                                   'resdcn_34 | resdcn_50 | resfpndcn_34 |'
-                                  'dla_34 | half-dla_34 | quarter-dla_34 | hrnet_18')
+                                  'full-dla_34 | half-dla_34 | quarter-dla_34 | hrnet_18')
     self.parser.add_argument('--head_conv', type=int, default=-1,
                              help='conv layer channels for output head'
                                   '0 for no conv layer'
@@ -122,9 +122,10 @@ class opts(object):
                              default='../videos/MOT16-03.mp4',
                              help='path to the input video')
     self.parser.add_argument('--output-format', type=str, default='video', help='video or text')
-    self.parser.add_argument('--output-root', type=str, default='../demos', help='expected output root path')
+    self.parser.add_argument('--output_root', type=str, default='../demos', help='expected output root path')
     self.parser.add_argument('--gen_hm', action='store_true', help='whether to generate heatmap')
     self.parser.add_argument('--gen_dets', action='store_true', help='whether to generate detection numbers')
+    self.parser.add_argument('--imgsize_index', type=int, default=-1, help='determine the input image size')
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
@@ -233,11 +234,16 @@ class opts(object):
         opt.heads.update({'reg': 2})
       opt.nID = dataset.nID
 
-      opt.img_size = (1088, 608)
-      # opt.img_size = (864, 480)
-      # opt.img_size = (704, 384)
-      # opt.img_size = (640, 352)
-      # opt.img_size = (576, 320)
+      if opt.imgsize_index == -1:
+        opt.img_size = (1088, 608)
+        # opt.img_size = (864, 480)
+        # opt.img_size = (704, 384)
+        # opt.img_size = (640, 352)
+        # opt.img_size = (576, 320)
+      else:
+        imgsize_index = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+        opt.img_size = imgsize_index[opt.imgsize_index]
+
 
     else:
       assert 0, 'task not defined!'

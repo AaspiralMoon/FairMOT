@@ -19,7 +19,7 @@ from .yolo import get_pose_net as get_pose_net_yolo
 
 _model_factory = {
   'dlav0': get_dlav0, # default DLAup
-  'dla': get_dla_dcn,
+  'full-dla': get_dla_dcn,
   'half-dla': get_dla_dcn_half,
   'quarter-dla': get_dla_dcn_quarter,
   'dlaconv': get_dla_conv,
