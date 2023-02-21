@@ -16,7 +16,6 @@ from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
-from utils.utils import att_loss, sum_loss
 from .base_trainer import BaseTrainer
 
 
@@ -43,7 +42,7 @@ class MotLoss(torch.nn.Module):
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))
         self.s_id = nn.Parameter(-1.05 * torch.ones(1))
 
-    def forward(self, outputs, batch, g_s=None, g_t=None):
+    def forward(self, outputs, batch):
         opt = self.opt
         hm_loss, wh_loss, off_loss, id_loss, = 0, 0, 0, 0
         for s in range(opt.num_stacks):
@@ -82,30 +81,19 @@ class MotLoss(torch.nn.Module):
         if opt.multi_loss == 'uncertainty':
             loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)                 # final loss
             loss *= 0.5
-            if opt.attention:
-                beta = [opt.beta/(i.size(2)*i.size(3))/opt.batch_size for i in g_t]
-                at_loss = sum_loss([att_loss(x, y) for x, y in zip(g_s, g_t)], beta)         
-                loss = loss + at_loss      # loss_with_at = loss_total + loss_at
         else:
             loss = det_loss + 0.1 * id_loss
-        if not opt.attention:
-            loss_stats = {'loss': loss, 'hm_loss': hm_loss,
+        loss_stats = {'loss': loss, 'hm_loss': hm_loss,
                             'wh_loss': wh_loss, 'off_loss': off_loss, 'id_loss': id_loss}
-        else:             
-            loss_stats = {'loss': loss, 'hm_loss': hm_loss,
-                            'wh_loss': wh_loss, 'off_loss': off_loss, 'id_loss': id_loss, 'at_loss': at_loss}
         return loss, loss_stats
 
 
 class MotTrainer(BaseTrainer):
-    def __init__(self, opt, model, optimizer=None, model_t=None):
-        super(MotTrainer, self).__init__(opt, model, optimizer=optimizer, model_t=model_t)       # model init
+    def __init__(self, opt, model, optimizer=None):
+        super(MotTrainer, self).__init__(opt, model, optimizer=optimizer)       # model init
 
     def _get_losses(self, opt):
-        if not opt.attention:
-            loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
-        else: 
-            loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss', 'at_loss']
+        loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss', 'id_loss']
         loss = MotLoss(opt)                                                     # calculate loss
         return loss_states, loss
 

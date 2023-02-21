@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Current File",
             "type": "python",
@@ -12,10 +13,13 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${fileDirname}",
-            // "args":[
-            //    "--load_model", "/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_quarter_dla34/model_last.pth", 
-            //    "--arch", "quarter-dla_34"
-            // ]
+            "args":[
+               "--task", "mot_multiknob",
+               "--data_cfg", "./lib/cfg/mot17_half_multiknob.json",
+               "--exp_id", "test_multiknob_training",
+               "--batch_size", "1" ,
+               "--num_epochs", "1"
+            ]
         }
     ]
 }

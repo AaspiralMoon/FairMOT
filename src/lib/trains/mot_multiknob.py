@@ -16,7 +16,6 @@ from models.losses import RegL1Loss, RegLoss, NormRegL1Loss, RegWeightedL1Loss
 from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
-from utils.utils import att_loss, sum_loss
 from .base_trainer import BaseTrainer
 
 
@@ -40,7 +39,7 @@ class MotLoss_MultiKnob(torch.nn.Module):
 
     def forward(self, outputs, batch):
         opt = self.opt
-        hm_loss, hmknob_loss, wh_loss, off_loss, id_loss, = 0, 0, 0, 0
+        hm_loss, hmknob_loss, wh_loss, off_loss, id_loss, = 0, 0, 0, 0, 0
         for s in range(opt.num_stacks):
             output = outputs[s]
             if not opt.mse_loss:

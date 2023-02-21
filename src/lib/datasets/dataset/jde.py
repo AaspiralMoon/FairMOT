@@ -675,7 +675,6 @@ class JointDataset_MultiKnob(LoadImagesAndLabels):  # for training
                                     [bbox[0], bbox[1]], dtype=np.float32)
                                 ct_int = ct.astype(np.int32)
                                 draw_gaussian(hm_multiknob[int(i + j + k)], ct_int, radius)                       
-            # num_objs = -10
             return
         for i, c in enumerate(self.cds):
             if files_index >= c:

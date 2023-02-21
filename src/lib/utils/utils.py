@@ -178,17 +178,3 @@ def encode_delta(gt_box_list, fg_anchor_list):
     dw = np.log(gw/pw)
     dh = np.log(gh/ph)
     return np.stack((dx, dy, dw, dh), axis=1)
-
-# attention loss
-def at(x):
-    return F.normalize(x.pow(2).mean(1).view(x.size(0), -1))
-
-
-def att_loss(x, y):
-    return (at(x) - at(y)).pow(2).mean()
-
-def sum_loss(x, beta):
-    sum = 0
-    for a, b in zip(x, beta):
-        sum = sum + a*b*0.5
-    return sum
