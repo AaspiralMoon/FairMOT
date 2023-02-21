@@ -146,13 +146,16 @@ class LoadImagesAndLabels:  # for training
         self.height = img_size[1]
         self.augment = augment
         self.transforms = transforms
+        self.imgsizes = [1088, 864, 704, 640, 576]
+        self.models = ['full', 'half', 'quarter']
+        self.qps = [10, 20, 30, 40, 50]
 
     def __getitem__(self, files_index):
         img_path = self.img_files[files_index]
         label_path = self.label_files[files_index]
         return self.get_data(img_path, label_path)
 
-    def get_data(self, img_path, label_path):
+    def get_data(self, img_path, label_path, ismultiknob=False):
         height = self.height
         width = self.width
         img = cv2.imread(img_path)  # BGR
@@ -193,12 +196,32 @@ class LoadImagesAndLabels:  # for training
             labels[:, 3] = ratio * h * (labels0[:, 3] - labels0[:, 5] / 2) + padh
             labels[:, 4] = ratio * w * (labels0[:, 2] + labels0[:, 4] / 2) + padw
             labels[:, 5] = ratio * h * (labels0[:, 3] + labels0[:, 5] / 2) + padh
+            if ismultiknob:
+                labels_multiknob = {}
+                for imgsz in self.imgsizes:
+                    for m in self.models:
+                        for qp in self.qps:
+                            label_path_c = label_path.replace('img1', '{}_{}_{}'.format(imgsz, m, qp))
+                            labels0 = np.loadtxt(label_path_c, dtype=np.float32).reshape(-1, 6)
+
+                            # Normalized xywh to pixel xyxy format
+                            labels_c = labels0.copy()
+                            labels_c[:, 2] = ratio * w * (labels0[:, 2] - labels0[:, 4] / 2) + padw
+                            labels_c[:, 3] = ratio * h * (labels0[:, 3] - labels0[:, 5] / 2) + padh
+                            labels_c[:, 4] = ratio * w * (labels0[:, 2] + labels0[:, 4] / 2) + padw
+                            labels_c[:, 5] = ratio * h * (labels0[:, 3] + labels0[:, 5] / 2) + padh
+                            labels_multiknob['{}_{}_{}'.format(imgsz, m, qp)] = labels_c
         else:
             labels = np.array([])
 
         # Augment image and labels
         if self.augment:
             img, labels, M = random_affine(img, labels, degrees=(-5, 5), translate=(0.10, 0.10), scale=(0.50, 1.20))
+            if ismultiknob:
+                for imgsz in self.imgsizes:
+                    for m in self.models:
+                        for qp in self.qps:
+                            labels_multiknob['{}_{}_{}'.format(imgsz, m, qp)] = apply_affine(M, labels_multiknob['{}_{}_{}'.format(imgsz, m, qp)], degrees=(-5, 5))
 
         plotFlag = False
         if plotFlag:
@@ -220,6 +243,13 @@ class LoadImagesAndLabels:  # for training
             labels[:, 3] /= height
             labels[:, 4] /= width
             labels[:, 5] /= height
+            if ismultiknob:
+                for item in labels_multiknob.values():
+                    item[:, 2:6] = xyxy2xywh(item[:, 2:6].copy())  # / height
+                    item[:, 2] /= width
+                    item[:, 3] /= height
+                    item[:, 4] /= width
+                    item[:, 5] /= height
         if self.augment:
             # random left-right flip
             lr_flip = True
@@ -227,12 +257,17 @@ class LoadImagesAndLabels:  # for training
                 img = np.fliplr(img)
                 if nL > 0:
                     labels[:, 2] = 1 - labels[:, 2]
+                    if ismultiknob:
+                        for item in labels_multiknob.values():
+                            item[:, 2] = 1 - item[:, 2]
 
         img = np.ascontiguousarray(img[:, :, ::-1])  # BGR to RGB
 
         if self.transforms is not None:
             img = self.transforms(img)
 
+        if ismultiknob:
+            return img, labels, labels_multiknob, img_path, (h, w)
         return img, labels, img_path, (h, w)
 
     def __len__(self):
@@ -252,6 +287,49 @@ def letterbox(img, height=608, width=1088,
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
     return img, ratio, dw, dh
 
+def apply_affine(M, targets=None, degrees=(-10, 10)):
+    a = random.random() * (degrees[1] - degrees[0]) + degrees[0]
+    if targets is not None:
+        if len(targets) > 0:
+            n = targets.shape[0]
+            points = targets[:, 2:6].copy()
+            area0 = (points[:, 2] - points[:, 0]) * (points[:, 3] - points[:, 1])
+
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = (xy @ M.T)[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # apply angle-based reduction
+            radians = a * math.pi / 180
+            reduction = max(abs(math.sin(radians)), abs(math.cos(radians))) ** 0.5
+            x = (xy[:, 2] + xy[:, 0]) / 2
+            y = (xy[:, 3] + xy[:, 1]) / 2
+            w = (xy[:, 2] - xy[:, 0]) * reduction
+            h = (xy[:, 3] - xy[:, 1]) * reduction
+            xy = np.concatenate((x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+            # reject warped points outside of image
+            #np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+            #np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+            #np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+            #np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            w = xy[:, 2] - xy[:, 0]
+            h = xy[:, 3] - xy[:, 1]
+            area = w * h
+            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
+            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
+
+            targets = targets[i]
+            targets[:, 2:6] = xy[i]
+            
+    return targets
+    
 
 def random_affine(img, targets=None, degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-2, 2),
                   borderValue=(127.5, 127.5, 127.5)):
@@ -488,6 +566,191 @@ class JointDataset(LoadImagesAndLabels):  # for training
         ret = {'input': imgs, 'hm': hm, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh, 'reg': reg, 'ids': ids, 'bbox': bbox_xys}
         return ret
 
+class JointDataset_MultiKnob(LoadImagesAndLabels):  # for training
+    default_resolution = [1088, 608]
+    mean = None
+    std = None
+    num_classes = 1
+
+    def __init__(self, opt, root, paths, img_size=(1088, 608), augment=False, transforms=None):
+        self.opt = opt
+        dataset_names = paths.keys()
+        self.img_files = OrderedDict()
+        self.label_files = OrderedDict()
+        self.label_files_multiknob = OrderedDict()
+        self.tid_num = OrderedDict()
+        self.tid_start_index = OrderedDict()
+        self.num_classes = 1
+        self.ismultiknob = True
+        self.imgsizes = [1088, 864, 704, 640, 576]
+        self.models = ['full', 'half', 'quarter']
+        self.qps = [10, 20, 30, 40, 50]
+        self.ratios = {1088: 1, 864: 0.79, 704: 0.64, 640: 0.58, 576: 0.52}
+
+
+        for ds, path in paths.items():
+            with open(path, 'r') as file:
+                self.img_files[ds] = file.readlines()
+                self.img_files[ds] = [osp.join(root, x.strip()) for x in self.img_files[ds]]
+                self.img_files[ds] = list(filter(lambda x: len(x) > 0, self.img_files[ds]))
+
+            self.label_files[ds] = [
+                x.replace('img1', 'labels_with_ids').replace('.png', '.txt').replace('.jpg', '.txt')
+                for x in self.img_files[ds]]
+
+        for ds, label_paths in self.label_files.items():
+            max_index = -1
+            for lp in label_paths:
+                lb = np.loadtxt(lp)
+                if len(lb) < 1:
+                    continue
+                if len(lb.shape) < 2:
+                    img_max = lb[1]
+                else:
+                    img_max = np.max(lb[:, 1])
+                if img_max > max_index:
+                    max_index = img_max
+            self.tid_num[ds] = max_index + 1
+
+        last_index = 0
+        for i, (k, v) in enumerate(self.tid_num.items()):
+            self.tid_start_index[k] = last_index
+            last_index += v
+
+        self.nID = int(last_index + 1)
+        self.nds = [len(x) for x in self.img_files.values()]
+        self.cds = [sum(self.nds[:i]) for i in range(len(self.nds))]
+        self.nF = sum(self.nds)
+        self.width = img_size[0]
+        self.height = img_size[1]
+        self.max_objs = opt.K
+        self.augment = augment
+        self.transforms = transforms
+
+        print('=' * 80)
+        print('dataset summary')
+        print(self.tid_num)
+        print('total # identities:', self.nID)
+        print('start index')
+        print(self.tid_start_index)
+        print('=' * 80)
+
+    def __getitem__(self, files_index):
+        def draw_multiknob_gaussian(hm_multiknob, labels_multiknob):
+            draw_gaussian = draw_msra_gaussian if self.opt.mse_loss else draw_umich_gaussian
+            for i in range(len(self.imgsizes)):
+                for j in range(len(self.models)):
+                    for k in range(len(self.qps)):
+                        labels = labels_multiknob['{}_{}_{}'.format(self.imgsizes[i], self.models[j], self.qps[k])]
+                        num_objs = labels.shape[0]
+                        for k in range(num_objs):
+                            label = labels[k]
+                            bbox = label[2:]
+                            cls_id = int(label[0])
+                            bbox[[0, 2]] = bbox[[0, 2]] * output_w
+                            bbox[[1, 3]] = bbox[[1, 3]] * output_h
+                            bbox_amodal = copy.deepcopy(bbox)
+                            bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+                            bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+                            bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+                            bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
+                            bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                            bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+                            h = bbox[3]
+                            w = bbox[2]
+                
+                            bbox_xy = copy.deepcopy(bbox)
+                            bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+                            bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+                            bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+                            bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+                
+                            if h > 0 and w > 0:
+                                radius = gaussian_radius((math.ceil(h), math.ceil(w)))
+                                radius = max(0, int(radius))
+                                radius = 6 if self.opt.mse_loss else radius
+                                radius = int(radius * self.ratios[self.imgsizes[i]])
+                                #radius = max(1, int(radius)) if self.opt.mse_loss else radius
+                                ct = np.array(
+                                    [bbox[0], bbox[1]], dtype=np.float32)
+                                ct_int = ct.astype(np.int32)
+                                draw_gaussian(hm_multiknob[int(i + j + k)], ct_int, radius)                       
+            # num_objs = -10
+            return
+        for i, c in enumerate(self.cds):
+            if files_index >= c:
+                ds = list(self.label_files.keys())[i]
+                start_index = c
+
+        img_path = self.img_files[ds][files_index - start_index]
+        label_path = self.label_files[ds][files_index - start_index]
+
+        imgs, labels, labels_multiknob, img_path, (input_h, input_w) = self.get_data(img_path, label_path, ismultiknob=True)
+        for i, _ in enumerate(labels):
+            if labels[i, 1] > -1:
+                labels[i, 1] += self.tid_start_index[ds]
+
+        output_h = imgs.shape[1] // self.opt.down_ratio
+        output_w = imgs.shape[2] // self.opt.down_ratio
+        num_classes = self.num_classes
+        num_objs = labels.shape[0]
+        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
+        hm_multiknob = np.zeros((75, output_h, output_w), dtype=np.float32)
+        if self.opt.ltrb:
+            wh = np.zeros((self.max_objs, 4), dtype=np.float32)
+        else:
+            wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs, ), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs, ), dtype=np.uint8)
+        ids = np.zeros((self.max_objs, ), dtype=np.int64)
+        bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+        draw_multiknob_gaussian(hm_multiknob, labels_multiknob)
+        draw_gaussian = draw_msra_gaussian if self.opt.mse_loss else draw_umich_gaussian
+        for k in range(min(num_objs, self.max_objs)):
+            label = labels[k]
+            bbox = label[2:]
+            cls_id = int(label[0])
+            bbox[[0, 2]] = bbox[[0, 2]] * output_w
+            bbox[[1, 3]] = bbox[[1, 3]] * output_h
+            bbox_amodal = copy.deepcopy(bbox)
+            bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+            bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+            bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+            bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
+            bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+            bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+            h = bbox[3]
+            w = bbox[2]
+
+            bbox_xy = copy.deepcopy(bbox)
+            bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+            bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+            bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+            bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+
+            if h > 0 and w > 0:
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)))
+                radius = max(0, int(radius))
+                radius = 6 if self.opt.mse_loss else radius
+                #radius = max(1, int(radius)) if self.opt.mse_loss else radius
+                ct = np.array(
+                    [bbox[0], bbox[1]], dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                draw_gaussian(hm[cls_id], ct_int, radius)
+                if self.opt.ltrb:
+                    wh[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                            bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
+                else:
+                    wh[k] = 1. * w, 1. * h
+                ind[k] = ct_int[1] * output_w + ct_int[0]
+                reg[k] = ct - ct_int
+                reg_mask[k] = 1
+                ids[k] = label[1]
+                bbox_xys[k] = bbox_xy
+
+        ret = {'input': imgs, 'hm': hm, 'hmknob': hm_multiknob, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh, 'reg': reg, 'ids': ids, 'bbox': bbox_xys}
+        return ret
 
 class DetDataset(LoadImagesAndLabels):  # for training
     def __init__(self, root, paths, img_size=(1088, 608), augment=False, transforms=None):

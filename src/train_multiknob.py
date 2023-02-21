@@ -1,3 +1,5 @@
+# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id test_multiknob_training  --batch_size 1 --num_epochs 1
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -42,13 +44,8 @@ def main(opt):
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
 
     print('Creating model...')
-    model = create_model(opt.arch, opt.heads, opt.head_conv)                      # create student model
+    model = create_model(opt.arch, opt.heads, opt.head_conv)                      
     optimizer = torch.optim.Adam(model.parameters(), opt.lr)
-    if (opt.attention):
-        model_t = create_model(opt.arch_t, opt.heads, opt.head_conv)  
-        model_t = load_model(model_t, opt.load_model_t)                           # load teacher model
-        print('Using attention...\nCreate teacher model: ' + opt.arch_t)
-    print('Create model: ' + opt.arch)
     start_epoch = 0
 
     # Get dataloader
@@ -64,10 +61,7 @@ def main(opt):
 
     print('Starting training...')
     Trainer = train_factory[opt.task]
-    if not opt.attention:
-        trainer = Trainer(opt, model, optimizer)                     # MotTrainer, student train with teacher
-    else:
-        trainer = Trainer(opt, model, optimizer, model_t)
+    trainer = Trainer(opt, model, optimizer)
     trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
     if opt.load_model != '':                                     # load pretrained model
@@ -106,4 +100,3 @@ if __name__ == '__main__':
     torch.cuda.set_device(2)
     opt = opts().parse()
     main(opt)
-

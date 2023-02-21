@@ -1,0 +1,7 @@
+{
+    "root":"/nfs/u40/xur86/projects/DeepScale/datasets/",
+    "train":
+    {
+        "mot17":"./data/mot17_multiknob.half"
+    }
+}

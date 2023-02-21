@@ -284,16 +284,13 @@ class DLA(nn.Module):
             inplanes = planes
         return nn.Sequential(*modules)
 
-    def forward(self, x, attention=False):
+    def forward(self, x):
         y = []
         x = self.base_layer(x)
         for i in range(6):
-            x = getattr(self, 'level{}'.format(i))(x)                                   # get activation map
+            x = getattr(self, 'level{}'.format(i))(x)                                 
             y.append(x)
-        if not attention:
-            return y
-        else:
-            return y, [y[0], y[1], y[2], y[3], y[4], y[5]]                                    # forward return outputs of levels
+        return y
 
 
     def load_pretrained_model(self, data='imagenet', name='dla34', hash='ba72cf86'):
@@ -495,34 +492,19 @@ class DLASeg(nn.Module):
                 fill_fc_weights(fc)
             self.__setattr__(head, fc)
 
-    def forward(self, x, attention=False):
-        if not attention:                                                          # without attention: output
-            x= self.base(x)
-            x = self.dla_up(x)
+    def forward(self, x):                                               
+        x= self.base(x)
+        x = self.dla_up(x)
 
-            y = []
-            for i in range(self.last_level - self.first_level):
-                y.append(x[i].clone())
-            self.ida_up(y, 0, len(y))
+        y = []
+        for i in range(self.last_level - self.first_level):
+            y.append(x[i].clone())
+        self.ida_up(y, 0, len(y))
 
-            z = {}
-            for head in self.heads:
-                z[head] = self.__getattr__(head)(y[-1])
-            return [z]
-
-        else:                                                                                 # with attention: output + g
-            g, x = self.base(x, attention)
-            x = self.dla_up(x)
-
-            y = []
-            for i in range(self.last_level - self.first_level):
-                y.append(x[i].clone())
-            self.ida_up(y, 0, len(y))
-
-            z = {}
-            for head in self.heads:
-                z[head] = self.__getattr__(head)(y[-1])
-            return g, [z]
+        z = {}
+        for head in self.heads:
+            z[head] = self.__getattr__(head)(y[-1])
+        return [z]
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
   model = DLASeg('dla{}'.format(num_layers), heads,

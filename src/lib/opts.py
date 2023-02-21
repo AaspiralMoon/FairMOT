@@ -86,10 +86,6 @@ class opts(object):
     self.parser.add_argument('--trainval', action='store_true',
                              help='include validation in training and '
                                   'test on test set')
-    self.parser.add_argument('--attention', action='store_true', help='attention transfer or not')        # whether to use attention           
-    self.parser.add_argument('--load_model_t', default='/nfs/u40/xur86/FairMOT/models/fairmot_dla34.pth', help='teacher model path')                     # load teacher model
-    self.parser.add_argument('--arch_t', default='dla_34', help='teacher architecture')                   # teacher architecture
-    self.parser.add_argument('--beta', default=1e7, help='hyper parameter for attention loss')
 
     # test
     self.parser.add_argument('--K', type=int, default=500,
@@ -141,6 +137,8 @@ class opts(object):
     self.parser.add_argument('--reg_loss', default='l1',
                              help='regression loss: sl1 | l1 | l2')
     self.parser.add_argument('--hm_weight', type=float, default=1,
+                             help='loss weight for keypoint heatmaps.')
+    self.parser.add_argument('--hmknob_weight', type=float, default=1,
                              help='loss weight for keypoint heatmaps.')
     self.parser.add_argument('--off_weight', type=float, default=1,
                              help='loss weight for keypoint local offsets.')
@@ -243,8 +241,23 @@ class opts(object):
       else:
         imgsize_index = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
         opt.img_size = imgsize_index[opt.imgsize_index]
+    elif opt.task == 'mot_multiknob':
+      opt.heads = {'hm': opt.num_classes, 'hmres': 75,
+                   'wh': 2 if not opt.ltrb else 4,
+                   'id': opt.reid_dim}
+      if opt.reg_offset:
+        opt.heads.update({'reg': 2})
+      opt.nID = dataset.nID
 
-
+      if opt.imgsize_index == -1:
+        opt.img_size = (1088, 608)
+        # opt.img_size = (864, 480)
+        # opt.img_size = (704, 384)
+        # opt.img_size = (640, 352)
+        # opt.img_size = (576, 320)
+      else:
+        imgsize_index = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+        opt.img_size = imgsize_index[opt.imgsize_index]
     else:
       assert 0, 'task not defined!'
     print('heads', opt.heads)
@@ -253,6 +266,9 @@ class opts(object):
   def init(self, args=''):
     default_dataset_info = {
       'mot': {'default_resolution': [608, 1088], 'num_classes': 1,
+                'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
+                'dataset': 'jde', 'nID': 14455},
+      'mot_multiknob': {'default_resolution': [608, 1088], 'num_classes': 1,
                 'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
                 'dataset': 'jde', 'nID': 14455},
     }
