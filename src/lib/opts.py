@@ -139,7 +139,7 @@ class opts(object):
     self.parser.add_argument('--hm_weight', type=float, default=1,
                              help='loss weight for keypoint heatmaps.')
     self.parser.add_argument('--hmknob_weight', type=float, default=1,
-                             help='loss weight for keypoint heatmaps.')
+                             help='loss weight for keypoint multi-knob heatmaps.')
     self.parser.add_argument('--off_weight', type=float, default=1,
                              help='loss weight for keypoint local offsets.')
     self.parser.add_argument('--wh_weight', type=float, default=0.1,

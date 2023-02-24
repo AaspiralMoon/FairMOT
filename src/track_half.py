@@ -22,7 +22,7 @@ import datasets.dataset.jde as datasets
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
-# python track_half.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --arch dla_34 --gen_hm --gen_dets
+# python track_half.py --task mot_multiknob --load_model ./model_last.pth
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
@@ -229,13 +229,13 @@ if __name__ == '__main__':
                       MOT17-14-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/test')
     if opt.val_mot17:
-        # seqs_str = '''MOT17-02-SDP
-        #               MOT17-04-SDP
-        #               MOT17-05-SDP
-        #               MOT17-09-SDP
-        #               MOT17-10-SDP
-        #               MOT17-11-SDP'''
-        seqs_str = '''MOT17-02-SDP'''
+        seqs_str = '''MOT17-02-SDP
+                      MOT17-04-SDP
+                      MOT17-05-SDP
+                      MOT17-09-SDP
+                      MOT17-10-SDP
+                      MOT17-11-SDP'''
+        # seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:
         seqs_str = '''Venice-2
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='test4',
+         exp_name='test',
          show_image=False,
          save_images=False,
          save_videos=False,

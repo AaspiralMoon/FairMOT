@@ -36,7 +36,7 @@ def gen_detections(data_root, result_root, model_root, seqs, imgsize_index, mode
                     img_path = osp.join(data_root, seq, 'QP_{}'.format(qp), 'images')
                     result_path = osp.join(result_root, seq, '{}_{}_{}'.format(imgsize_list[idx][0], m[:m.find('-')], qp))
                     mkdir_if_missing(result_path)
-                    cmd_str = 'python track_half_multiknob.py --data_dir {} --output_root {} --load_model {}/{}.pth --imgsize_index {} --arch {} --gen_dets'.format(img_path, 
+                    cmd_str = 'python gen_detections.py --data_dir {} --output_root {} --load_model {}/{}.pth --imgsize_index {} --arch {} --gen_dets'.format(img_path, 
                                                                                                                                                             result_path, model_root, m, idx, m)
                     os.system(cmd_str)
 

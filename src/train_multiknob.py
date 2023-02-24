@@ -1,4 +1,4 @@
-# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id test_multiknob_training  --batch_size 1 --num_epochs 1
+# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id test_multiknob_training --batch_size 1 --num_epochs 1
 
 from __future__ import absolute_import
 from __future__ import division

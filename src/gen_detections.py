@@ -1,3 +1,7 @@
+# this script is for generating and saving detection results
+# Author: Renjie Xu
+# Time: 2023/2/22
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
