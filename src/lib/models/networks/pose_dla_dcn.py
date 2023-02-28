@@ -309,11 +309,11 @@ class DLA(nn.Module):
 
     def load_pretrained_file(self, load_dir):                                             # load weights from keivan
         if os.path.isfile(load_dir):
-            print('Loading base models weights from: ', load_dir)    
+            print('Loading weights from: ', load_dir)    
             model_weights = torch.load(load_dir, map_location=torch.device('cpu'))
             self.load_state_dict(model_weights['state_dict'], strict=False)
         else:
-            print('Loading dir for the base model was empty!')
+            print('The directory was empty!')
 
 def dla34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],

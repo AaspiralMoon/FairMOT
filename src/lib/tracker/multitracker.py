@@ -254,7 +254,6 @@ class JDETracker(object):
 
         dets = self.post_process(dets, meta)
         dets = self.merge_outputs([dets])[1]
-
         remain_inds = dets[:, 4] > self.opt.conf_thres
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]
