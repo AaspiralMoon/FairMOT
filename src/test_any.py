@@ -6,27 +6,27 @@ import _init_paths
 import torch
 import os
 import os.path as osp
-from models.model import create_model, load_model
-import datasets.dataset.jde as datasets
+import numpy as np
+import matplotlib
+import time
+import matplotlib.pyplot as plt
+import cv2
 
-model_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/models/ctdet_coco_dla_2x.pth'
-data_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-02-SDP/img1'
+detection_result_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/results'
+save_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels/verify_detections'
 
-arch = 'full-dla_34'
-heads = {'hm': 1, 'wh': 4, 'id': 128, 'reg': 2}
-head_conv = 256
+def plot_label(img, labels):
+    img = cv2.imread(img)
+    matplotlib.use('Agg')
+    plt.close('all')
+    plt.figure()
+    plt.imshow(img[:, :, ::-1])
+    plt.plot(labels[:, [0, 2, 2, 0, 0]].T, labels[:, [1, 1, 3, 3, 1]].T, '.-')
+    plt.axis('off')
+    plt.savefig(osp.join(save_path, 'test.jpg'))
+    time.sleep(3)
+    plt.close('all')
 
-
-model = create_model(arch, heads, head_conv)
-model = load_model(model, model_path)
-model = model.to(torch.device('cuda'))
-model.eval()
-
-# dataloader = datasets.LoadImages(data_path, (1088, 608))
-
-# for i, (path, img, img0) in enumerate(dataloader):
-#     blob = torch.from_numpy(img).cuda().unsqueeze(0)
-#     output = model(blob)[-1]
-#     hm_knob = output['hm']
-
-#     print(hm_knob.shape)
+img = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-13-SDP/img1/000001.jpg'
+labels = np.loadtxt('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/results/MOT17-13-SDP/576_quarter/1.txt')
+plot_label(img, labels)

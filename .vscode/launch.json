@@ -16,9 +16,10 @@
             "args":[
                "--task", "mot_multiknob",
                "--data_cfg", "./lib/cfg/mot17_half_multiknob.json",
-               "--exp_id", "test_multiknob_training",
-               "--batch_size", "1" ,
-               "--num_epochs", "1"
+               "--exp_id", "verify_labels",
+               "--batch_size", "1",
+               "--num_epochs", "1",
+               "--gpus", "2"
             ]
         }
     ]

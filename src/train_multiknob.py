@@ -1,5 +1,7 @@
-# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id test_multiknob_training --batch_size 1 --num_epochs 1
-
+# screen -S train      create a screen
+# screen -r train      return to the screen
+# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id multiknob_singleRes --load_model ../models/ctdet_coco_dla_2x.pth --batch_size 16 --num_epochs 150 --gpus 2,3
+# screen -X -S train quit    delete the screen
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -90,7 +92,8 @@ def main(opt):
             print('Drop LR to', lr)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
-        if epoch % 5 == 0 or epoch >= 25:
+        # if epoch % 5 == 0 or epoch >= 25:
+        if epoch % 5 == 0 or epoch >= 80:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
                        epoch, model, optimizer)
     logger.close()
