@@ -221,44 +221,32 @@ class LoadImagesAndLabels:  # for training
                     for m in self.models:
                         labels_multiknob['{}_{}'.format(imgsz, m)] = apply_affine(M, labels_multiknob['{}_{}'.format(imgsz, m)], degrees=(-5, 5))
 
-        # plotFlag = True
-        # if plotFlag:
-        #     import matplotlib
-        #     matplotlib.use('Agg')
-        #     import matplotlib.pyplot as plt
-        #     plt.close('all')
-        #     # plt.figure(figsize=(50, 50))
-        #     plt.imshow(img[:, :, ::-1])
-        #     plt.plot(labels[:, [2, 4, 4, 2, 2]].T, labels[:, [3, 3, 5, 5, 3]].T, '.-')
-        #     # plt.plot(labels[:, [1, 3, 3, 1, 1]].T, labels[:, [2, 2, 4, 4, 2]].T, '.-')
-        #     plt.axis('off')
-        #     plt.savefig('test.jpg')
-        #     time.sleep(3)
-        #     plt.close('all')
-        # def plot_label(img, labels, idx=-1):
-        #     import matplotlib
-        #     matplotlib.use('Agg')
-        #     import matplotlib.pyplot as plt
-        #     plt.close('all')
-        #     plt.figure()
-        #     plt.imshow(img[:, :, ::-1])
-        #     plt.plot(labels[:, [2, 4, 4, 2, 2]].T, labels[:, [3, 3, 5, 5, 3]].T, '.-')
-        #     plt.axis('off')
-        #     if idx == -1:
-        #         plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test.jpg'))
-        #         time.sleep(3)
-        #     else:
-        #         plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test_{}.jpg'.format(idx)))
-        #         time.sleep(3)
-        #     plt.close('all')
+        def plot_label(img, labels, idx=-1):
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            plt.close()
+            plt.clf()
+            plt.figure()
+            plt.imshow(img[:, :, ::-1])
+            plt.plot(labels[:, [2, 4, 4, 2, 2]].T, labels[:, [3, 3, 5, 5, 3]].T, '.-')
+            plt.axis('off')
+            if idx == -1:
+                plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test.jpg'))
+            else:
+                plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test_{}.jpg'.format(idx)))
+            plt.close()
+            plt.clf()
 
-        # plot_label(img_path, labels)
-        # idx = 0
-        # for imgsz in self.imgsizes:
-        #     for m in self.models:
-        #         plot_label(img, labels_multiknob['{}_{}'.format(imgsz, m)], idx)
-        #         idx += 1
-
+        plot_label(img, labels)
+        idx = 0
+        for imgsz in self.imgsizes:
+            for m in self.models:
+                plot_label(img, labels_multiknob['{}_{}'.format(imgsz, m)], idx)
+                idx += 1
+        # import sys
+        # sys.exit(0)
+        
         nL = len(labels)
         if nL > 0:
             # convert xyxy to xywh
@@ -776,21 +764,19 @@ class JointDataset_MultiKnob(LoadImagesAndLabels):  # for training
 
         ret = {'input': imgs, 'hm': hm, 'hmknob': hm_multiknob, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh, 'reg': reg, 'ids': ids, 'bbox': bbox_xys}
 
-        # def plot_and_save_img(img, idx=-1):               # for debug
-        #     import matplotlib.image as mpimg
-        #     if idx == -1:
-        #         mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap.png'), img)
-        #         time.sleep(3)
-        #     else:
-        #         mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap_{}.png'.format(idx)), img)
-        #         time.sleep(3)
+        def plot_and_save_img(img, idx=-1):               # for debug
+            import matplotlib.image as mpimg
+            if idx == -1:
+                mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap.png'), img, cmap='hot')
+            else:
+                mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap_{}.png'.format(idx)), img, cmap='hot')
         
-        # plot_and_save_img(hm[0], -1)
-        # for i in range(hm_multiknob.shape[0]):
-        #     plot_and_save_img(hm_multiknob[i], i)
+        plot_and_save_img(hm[0], -1)
+        for i in range(hm_multiknob.shape[0]):
+            plot_and_save_img(hm_multiknob[i], i)
         
-        # import sys
-        # sys.exit(0)
+        import sys
+        sys.exit(0)
         return ret
 
 class DetDataset(LoadImagesAndLabels):  # for training

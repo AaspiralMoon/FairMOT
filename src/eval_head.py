@@ -10,6 +10,7 @@ import os.path as osp
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from models.model import create_model, load_model
 import datasets.dataset.jde as datasets
 from models.decode import mot_decode
@@ -31,18 +32,10 @@ def mkdir_if_missing(d):
         os.makedirs(d)
         
 def plot_and_save_img(output_root, img, idx=-1):
-    matplotlib.use('Agg')
-    plt.close('all')
-    plt.figure()
-    plt.imshow(img, cmap='hot')
-    plt.axis('off')
     if idx == -1:
-        plt.savefig(osp.join(output_root, 'heatmap.png'))
-        time.sleep(3)
+        mpimg.imsave(osp.join(output_root, 'heatmap.png'), img, cmap='hot')
     else:
-        plt.savefig(osp.join(output_root, 'heatmap_{}.png'.format(idx)))
-        time.sleep(3)
-    plt.close('all')
+        mpimg.imsave(osp.join(output_root, 'heatmap_{}.png'.format(idx)), img, cmap='hot')
 
 def heatmap_to_binary(heatmap, threshold):
     binary = (heatmap > threshold).to(torch.float32)
@@ -67,8 +60,8 @@ def compare_hms(hm, hm_knob):
         print('{} : '.format(knob_list[i]), torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return 
 
-model_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model/model_30.pth'
-data_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-02-SDP/img1'
+model_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model/model_last.pth'
+data_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-13-SDP/img1'
 output_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model'
 knob_list = []
 imgsize_list = [1088, 864, 704, 640, 576]
