@@ -11,18 +11,43 @@ import argparse
 import motmetrics as mm
 import numpy as np
 import torch
-
+import ast
 from tracker.multitracker import JDETracker
 from tracking_utils import visualization as vis
 from tracking_utils.log import logger
 from tracking_utils.timer import Timer
 from tracking_utils.evaluation import Evaluator
 import datasets.dataset.jde as datasets
-
+from models.decode import _nms
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
-# python track_half.py --task mot_multiknob --load_model ./model_last.pth
+# python track_half_multiknob.py --task mot_multiknob --load_model ../models/full-dla_34.pth --load_half_model ../exp/mot/mot17_half_half-dla34_with_pretrain/model_last.pth --load_quarter_model ../models/quarter-dla_34.pth --switch_period 30
+
+def heatmap_to_binary(heatmap, threshold):
+    binary = (heatmap > threshold).to(torch.float32)
+    return binary
+
+def hadamard_operation(A, B): # Element-wise Hadamard product
+    return A * B 
+
+def compare_hms(hm, hm_knob):
+    det_rate_list = []
+    hm = _nms(hm)
+    hm_knob = _nms(hm_knob)
+    hm = heatmap_to_binary(hm, 0.2)
+    hm_knob = heatmap_to_binary(hm_knob, 0.2)
+    hm = hm.squeeze()                       
+    hm_knob = hm_knob.squeeze(0)
+    for i in range(hm_knob.shape[0]):
+        det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
+    return det_rate_list
+
+def update_config(det_rate_list, threshold):
+    config_fps_sorted = [11, 14, 8, 13, 10, 7, 5, 4, 12, 9, 2, 6, 1, 3, 0]      # the avg fps of the configurations from high to low
+    configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > threshold]
+    best_config = min((config_fps_sorted.index(candidates), candidates) for candidates in configs_candidates)[1]
+    return best_config
 
 def write_results(filename, results, data_type):
     if data_type == 'mot':
@@ -47,41 +72,45 @@ def write_results(filename, results, data_type):
     logger.info('save results to {}'.format(filename))
 
 
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, gen_dir=None, interval=1):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
+    imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    configs = []
+    for imgsz in imgsz_list:
+        for m in model_list:
+            configs.append('{}+{}'.format(imgsz, m))
     if save_dir:
         mkdir_if_missing(save_dir)
-    if gen_dir:
-        mkdir_if_missing(gen_dir)
     tracker = JDETracker(opt, frame_rate=frame_rate)
     timer = Timer()
     results = []
     len_all = len(dataloader)
     start_frame = int(len_all / 2)
     frame_id = int(len_all / 2)
+    best_config_idx = 0
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if frame_id % interval != 0:
-            frame_id += 1
-            continue
         if frame_id % 20 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
-
+        best_config = configs[best_config_idx]
+        best_imgsz, best_model = best_config.split('+')
+        dataloader.set_image_size(ast.literal_eval(best_imgsz))
+        path, img, img0 = dataloader.__getitem__(i)
         # run tracking
         timer.tic()
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
-
-        if opt.gen_dets:
-            len_dets, online_targets = tracker.update(blob, img0)
-            with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
-                np.savetxt(f, np.array(len_dets).reshape(1, -1), '%.1f')
-        elif opt.gen_hm:
-            hm, online_targets = tracker.update(blob, img0)
-            with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
-                np.savetxt(f, hm.squeeze().cpu().numpy(), '%.4f')
+        if (i % opt.switch_period ==0 or i == start_frame):
+            print('Running switching...')
+            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34')
+            det_rate_list = compare_hms(hm, hm_knob)
+            best_config_idx = update_config(det_rate_list, 0.9)
+        elif best_model == 'full-dla_34':
+            online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
         else: 
-            online_targets = tracker.update(blob, img0)
+            online_targets = tracker.update_hm(blob, img0, best_model)
 
+        print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i+1)))
         online_tlwhs = []
         online_ids = []        
         #online_scores = []
@@ -96,10 +125,6 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        if interval != 1:
-            for i in range(1, interval):
-                results.append((frame_id + 1 + i, online_tlwhs, online_ids))
-
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
@@ -112,12 +137,11 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     # save results
     write_results(result_filename, results, data_type)
     #write_results_score(result_filename, results, data_type)
-
     return frame_id, timer.average_time, timer.calls
 
 
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo',
-         save_images=False, save_videos=False, show_image=True, interval=1):
+         save_images=False, save_videos=False, show_image=True):
     logger.setLevel(logging.INFO)
     result_root = os.path.join(data_root, '..', 'results', exp_name)
     mkdir_if_missing(result_root)
@@ -132,17 +156,11 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         logger.info('start seq: {}'.format(seq))
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-        if opt.gen_hm:
-            gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
-        elif opt.gen_dets:
-            gen_dir = os.path.join(result_root, '{}_dets'.format(seq))
-        else:
-            gen_dir = None
 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         nf, ta, tc = eval_seq(opt, dataloader, data_type, result_filename,
-                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, gen_dir=gen_dir, interval=interval)
+                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)
@@ -275,5 +293,4 @@ if __name__ == '__main__':
          exp_name=opt.exp_id,
          show_image=False,
          save_images=False,
-         save_videos=False,
-         interval=1)
+         save_videos=False)

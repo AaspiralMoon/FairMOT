@@ -179,7 +179,28 @@ class JDETracker(object):
         self.model = create_model(opt.arch, opt.heads, opt.head_conv)
         self.model = load_model(self.model, opt.load_model)
         self.model = self.model.to(opt.device)
-        self.model.eval()
+        self.model.eval()              
+
+        heads_for_half_quarter = {'hm': opt.num_classes,                    # changes start here
+                                  'wh': 2 if not opt.ltrb else 4,
+                                  'id': opt.reid_dim}
+        if opt.reg_offset:
+            heads_for_half_quarter.update({'reg': 2})
+        if opt.load_half_model:                      
+            print('Creating half-dla_34 model...')
+            self.half_model = create_model('half-dla_34', heads_for_half_quarter, opt.head_conv)
+            self.half_model = load_model(self.half_model, opt.load_half_model)
+            self.half_model = self.half_model.to(opt.device)
+            self.half_model.eval()
+            print('Half-dla_34 model created !')
+
+        if opt.load_quarter_model:                      
+            print('Creating quarter-dla_34 model...')
+            self.quarter_model = create_model('quarter-dla_34', heads_for_half_quarter, opt.head_conv)
+            self.quarter_model = load_model(self.quarter_model, opt.load_quarter_model)
+            self.quarter_model = self.quarter_model.to(opt.device)
+            self.quarter_model.eval()
+            print('Quarter-dla_34 model created !')                             # changes end here
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
@@ -377,6 +398,170 @@ class JDETracker(object):
         if self.opt.gen_dets:                         # output detection results
             return dets, output_stracks
         return output_stracks
+
+    def update_hm(self, im_blob, img0, model_id):
+        self.frame_id += 1
+        activated_starcks = []
+        refind_stracks = []
+        lost_stracks = []
+        removed_stracks = []
+
+        width = img0.shape[1]
+        height = img0.shape[0]
+        inp_height = im_blob.shape[2]
+        inp_width = im_blob.shape[3]
+        c = np.array([width / 2., height / 2.], dtype=np.float32)
+        s = max(float(inp_width) / float(inp_height) * height, width) * 1.0
+        meta = {'c': c, 's': s,
+                'out_height': inp_height // self.opt.down_ratio,
+                'out_width': inp_width // self.opt.down_ratio}
+
+        ''' Step 1: Network forward, get detections & embeddings'''
+        with torch.no_grad():
+            if model_id == 'full-dla_34':
+                output = self.model(im_blob)[-1]
+                hm_knob = output['hmknob'].sigmoid_()
+            elif model_id == 'half-dla_34':
+                output = self.half_model(im_blob)[-1]
+            elif model_id == 'quarter-dla_34':
+                output = self.quarter_model(im_blob)[-1]
+            hm = output['hm'].sigmoid_()    # heatmap
+            wh = output['wh']               # width, height
+
+            id_feature = output['id']       # id
+            id_feature = F.normalize(id_feature, dim=1)
+
+            reg = output['reg'] if self.opt.reg_offset else None
+            dets, inds = mot_decode(hm, wh, reg=reg, ltrb=self.opt.ltrb, K=self.opt.K)
+            id_feature = _tranpose_and_gather_feat(id_feature, inds)
+            id_feature = id_feature.squeeze(0)
+            id_feature = id_feature.cpu().numpy()
+
+        dets = self.post_process(dets, meta)
+        dets = self.merge_outputs([dets])[1]
+        remain_inds = dets[:, 4] > self.opt.conf_thres
+        dets = dets[remain_inds]
+        id_feature = id_feature[remain_inds]
+
+        # vis
+        '''
+        for i in range(0, dets.shape[0]):
+            bbox = dets[i][0:4]
+            cv2.rectangle(img0, (bbox[0], bbox[1]),
+                          (bbox[2], bbox[3]),
+                          (0, 255, 0), 2)
+        cv2.imshow('dets', img0)
+        cv2.waitKey(0)
+        id0 = id0-1
+        '''
+
+        if len(dets) > 0:
+            '''Detections'''
+            detections = [STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30) for
+                          (tlbrs, f) in zip(dets[:, :5], id_feature)]
+        else:
+            detections = []
+
+        ''' Add newly detected tracklets to tracked_stracks'''
+        unconfirmed = []
+        tracked_stracks = []  # type: list[STrack]
+        for track in self.tracked_stracks:
+            if not track.is_activated:
+                unconfirmed.append(track)
+            else:
+                tracked_stracks.append(track)
+
+        ''' Step 2: First association, with embedding'''
+        strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
+        # Predict the current location with KF
+        #for strack in strack_pool:
+            #strack.predict()
+        STrack.multi_predict(strack_pool)
+        dists = matching.embedding_distance(strack_pool, detections)
+        #dists = matching.iou_distance(strack_pool, detections)
+        dists = matching.fuse_motion(self.kalman_filter, dists, strack_pool, detections)
+        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.4)
+
+        for itracked, idet in matches:
+            track = strack_pool[itracked]
+            det = detections[idet]
+            if track.state == TrackState.Tracked:
+                track.update(detections[idet], self.frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, self.frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        ''' Step 3: Second association, with IOU'''
+        detections = [detections[i] for i in u_detection]
+        r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
+        dists = matching.iou_distance(r_tracked_stracks, detections)
+        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.5)
+
+        for itracked, idet in matches:
+            track = r_tracked_stracks[itracked]
+            det = detections[idet]
+            if track.state == TrackState.Tracked:
+                track.update(det, self.frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, self.frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        for it in u_track:
+            track = r_tracked_stracks[it]
+            if not track.state == TrackState.Lost:
+                track.mark_lost()
+                lost_stracks.append(track)
+
+        '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
+        detections = [detections[i] for i in u_detection]
+        dists = matching.iou_distance(unconfirmed, detections)
+        matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
+        for itracked, idet in matches:
+            unconfirmed[itracked].update(detections[idet], self.frame_id)
+            activated_starcks.append(unconfirmed[itracked])
+        for it in u_unconfirmed:
+            track = unconfirmed[it]
+            track.mark_removed()
+            removed_stracks.append(track)
+
+        """ Step 4: Init new stracks"""
+        for inew in u_detection:
+            track = detections[inew]
+            if track.score < self.det_thresh:
+                continue
+            track.activate(self.kalman_filter, self.frame_id)
+            activated_starcks.append(track)
+        """ Step 5: Update state"""
+        for track in self.lost_stracks:
+            if self.frame_id - track.end_frame > self.max_time_lost:
+                track.mark_removed()
+                removed_stracks.append(track)
+
+        # print('Ramained match {} s'.format(t4-t3))
+
+        self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
+        self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
+        self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
+        self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
+        self.lost_stracks.extend(lost_stracks)
+        self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
+        self.removed_stracks.extend(removed_stracks)
+        self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
+        # get scores of lost tracks
+        output_stracks = [track for track in self.tracked_stracks if track.is_activated]
+
+        logger.debug('===========Frame {}=========='.format(self.frame_id))
+        logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
+        logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
+        logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
+        logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
+        
+        if model_id == 'full-dla_34':
+            return output_stracks, hm, hm_knob
+        else:
+            return output_stracks
 
 
 def joint_stracks(tlista, tlistb):

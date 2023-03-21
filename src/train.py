@@ -89,14 +89,17 @@ def main(opt):
             print('Drop LR to', lr)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
-        if epoch % 5 == 0 or epoch >= 25:
+        # if epoch % 5 == 0 or epoch >= 25:
+        #     save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
+        #                epoch, model, optimizer)
+        if epoch % 5 == 0 or epoch >= 300:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
                        epoch, model, optimizer)
     logger.close()
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(0)
     opt = opts().parse()
     main(opt)
 

@@ -60,9 +60,9 @@ def compare_hms(hm, hm_knob):
         print('{} : '.format(knob_list[i]), torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return 
 
-model_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model/model_last.pth'
-data_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-13-SDP/img1'
-output_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model'
+model_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_2nd/model_last.pth'
+data_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/train/MOT17-04-SDP/img1'
+output_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_2nd'
 knob_list = []
 imgsize_list = [1088, 864, 704, 640, 576]
 model_list = ['full', 'half', 'quarter']

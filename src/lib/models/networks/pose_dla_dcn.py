@@ -309,11 +309,11 @@ class DLA(nn.Module):
 
     def load_pretrained_file(self, load_dir):                                             # load weights from keivan
         if os.path.isfile(load_dir):
-            print('Loading weights from: ', load_dir)    
+            print('Loading pre-trained model from: ', load_dir)    
             model_weights = torch.load(load_dir, map_location=torch.device('cpu'))
             self.load_state_dict(model_weights['state_dict'], strict=False)
         else:
-            print('The directory was empty!')
+            print('The pre-trained model was empty!')
 
 def dla34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
@@ -328,7 +328,7 @@ def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
                 [8, 16, 32, 64, 128, 256],
                 block=BasicBlock, **kwargs)
     if pretrained:
-        model.load_pretrained_file('../models/half_pre.pth.tar')
+        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_half/model_best.pth')
     return model
 
 def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
@@ -336,7 +336,7 @@ def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
                 [4, 8, 16, 32, 64, 128],
                 block=BasicBlock, **kwargs)    
     if pretrained:
-        model.load_pretrained_file('../models/quarter_pre.pth.tar')
+        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_quarter/model_best.pth')
     return model
 
 class Identity(nn.Module):

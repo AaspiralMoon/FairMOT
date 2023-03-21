@@ -18,6 +18,10 @@ class opts(object):
                              #help='path to pretrained model')
     self.parser.add_argument('--load_model', default='',
                              help='path to pretrained model')
+    self.parser.add_argument('--load_half_model', default='',             # load half and quarter models in JDETracker, default path ../models/quarter-dla_34.pth
+                             help='path to half model')
+    self.parser.add_argument('--load_quarter_model', default='',
+                             help='path to quarter model')
     self.parser.add_argument('--resume', action='store_true',
                              help='resume an experiment. '
                                   'Reloaded the optimizer parameter and '
@@ -25,7 +29,7 @@ class opts(object):
                                   'in the exp dir if load_model is empty.') 
 
     # system
-    self.parser.add_argument('--gpus', default='2,3',
+    self.parser.add_argument('--gpus', default='0,1',
                              help='-1 for CPU, use comma for multiple gpus')
     self.parser.add_argument('--num_workers', type=int, default=8,
                              help='dataloader threads. 0 for single-thread.')
@@ -122,7 +126,10 @@ class opts(object):
     self.parser.add_argument('--gen_hm', action='store_true', help='whether to generate heatmap')
     self.parser.add_argument('--gen_dets', action='store_true', help='whether to generate detection numbers')
     self.parser.add_argument('--imgsize_index', type=int, default=-1, help='determine the input image size')
-
+    self.parser.add_argument('--switch_period', type=int, default=30, 
+                             help='switch period')
+    self.parser.add_argument('--is_profiling', default=True, help='profile the latency')
+    
     # mot
     self.parser.add_argument('--data_cfg', type=str,
                              default='../src/lib/cfg/mot17_half.json',

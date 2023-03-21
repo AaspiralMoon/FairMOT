@@ -81,7 +81,9 @@ class LoadImages:  # for inference
 
     def __len__(self):
         return self.nF  # number of files
-
+    
+    def set_image_size(self, img_size=(1088, 608)):
+        self.width, self.height = img_size
 
 class LoadVideo:  # for inference
     def __init__(self, path, img_size=(1088, 608)):
@@ -221,29 +223,29 @@ class LoadImagesAndLabels:  # for training
                     for m in self.models:
                         labels_multiknob['{}_{}'.format(imgsz, m)] = apply_affine(M, labels_multiknob['{}_{}'.format(imgsz, m)], degrees=(-5, 5))
 
-        def plot_label(img, labels, idx=-1):
-            import matplotlib
-            matplotlib.use('Agg')
-            import matplotlib.pyplot as plt
-            plt.close()
-            plt.clf()
-            plt.figure()
-            plt.imshow(img[:, :, ::-1])
-            plt.plot(labels[:, [2, 4, 4, 2, 2]].T, labels[:, [3, 3, 5, 5, 3]].T, '.-')
-            plt.axis('off')
-            if idx == -1:
-                plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test.jpg'))
-            else:
-                plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test_{}.jpg'.format(idx)))
-            plt.close()
-            plt.clf()
+        # def plot_label(img, labels, idx=-1):
+        #     import matplotlib
+        #     matplotlib.use('Agg')
+        #     import matplotlib.pyplot as plt
+        #     plt.close()
+        #     plt.clf()
+        #     plt.figure()
+        #     plt.imshow(img[:, :, ::-1])
+        #     plt.plot(labels[:, [2, 4, 4, 2, 2]].T, labels[:, [3, 3, 5, 5, 3]].T, '.-')
+        #     plt.axis('off')
+        #     if idx == -1:
+        #         plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test.jpg'))
+        #     else:
+        #         plt.savefig(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'test_{}.jpg'.format(idx)))
+        #     plt.close()
+        #     plt.clf()
 
-        plot_label(img, labels)
-        idx = 0
-        for imgsz in self.imgsizes:
-            for m in self.models:
-                plot_label(img, labels_multiknob['{}_{}'.format(imgsz, m)], idx)
-                idx += 1
+        # plot_label(img, labels)
+        # idx = 0
+        # for imgsz in self.imgsizes:
+        #     for m in self.models:
+        #         plot_label(img, labels_multiknob['{}_{}'.format(imgsz, m)], idx)
+        #         idx += 1
         # import sys
         # sys.exit(0)
         
@@ -764,19 +766,19 @@ class JointDataset_MultiKnob(LoadImagesAndLabels):  # for training
 
         ret = {'input': imgs, 'hm': hm, 'hmknob': hm_multiknob, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh, 'reg': reg, 'ids': ids, 'bbox': bbox_xys}
 
-        def plot_and_save_img(img, idx=-1):               # for debug
-            import matplotlib.image as mpimg
-            if idx == -1:
-                mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap.png'), img, cmap='hot')
-            else:
-                mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap_{}.png'.format(idx)), img, cmap='hot')
+        # def plot_and_save_img(img, idx=-1):               # for debug
+        #     import matplotlib.image as mpimg
+        #     if idx == -1:
+        #         mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap.png'), img, cmap='hot')
+        #     else:
+        #         mpimg.imsave(osp.join('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels', 'heatmap_{}.png'.format(idx)), img, cmap='hot')
         
-        plot_and_save_img(hm[0], -1)
-        for i in range(hm_multiknob.shape[0]):
-            plot_and_save_img(hm_multiknob[i], i)
+        # plot_and_save_img(hm[0], -1)
+        # for i in range(hm_multiknob.shape[0]):
+        #     plot_and_save_img(hm_multiknob[i], i)
         
-        import sys
-        sys.exit(0)
+        # import sys
+        # sys.exit(0)
         return ret
 
 class DetDataset(LoadImagesAndLabels):  # for training
