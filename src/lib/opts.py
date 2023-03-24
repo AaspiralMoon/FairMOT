@@ -90,6 +90,8 @@ class opts(object):
     self.parser.add_argument('--trainval', action='store_true',
                              help='include validation in training and '
                                   'test on test set')
+    self.parser.add_argument('--multi_res_train', default=False, 
+                             help='allow multiresolution training')       # add multi-resolution training
 
     # test
     self.parser.add_argument('--K', type=int, default=500,

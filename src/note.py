@@ -8,3 +8,13 @@ train_multiknob:
 track_half_multiknob:
     lib/tracker/multitrack.py - JDETracker - update_hm
     lib/datasets/dataset/jde - LoadImages - set_image_size
+
+
+Plan:
+1. Finish multi-res training of half model
+2. Re-train multiknob model
+3. Finish multires training of full and quarter model
+4. Re-generate train and result folder
+5. Re-train multiknob model
+6. Add QP
+7  ...

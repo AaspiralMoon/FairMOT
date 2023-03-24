@@ -69,7 +69,7 @@ if __name__ == '__main__':
             'MOT17-10-SDP',
             'MOT17-11-SDP',
             'MOT17-13-SDP']
-    model_root = '../exp/mot/mot17_multiknob'
+    model_root = '../exp/mot_multiknob/gen_datasets_multiknob'
     data_root = '../../datasets/MOT17_multiknob'
     result_root = osp.join(data_root, 'results')
     mkdir_if_missing(result_root)
@@ -78,4 +78,6 @@ if __name__ == '__main__':
     qp_list = [10, 20, 30, 40, 50]
     # change_video_qp(data_root, seqs, qp_list)
     # gen_detections(data_root, result_root, model_root, seqs, imgsize_index, model_list, qp_list)
+    cmd_str = 'rm -rf {}/*'.format(result_root)             # delete previous results
+    os.system(cmd_str)
     gen_detections(data_root, result_root, model_root, seqs, imgsize_index, model_list)

@@ -26,7 +26,7 @@ import datasets.dataset.jde as datasets
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
-# python track_half.py --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/new_mot17_dla34/model_last.pth --arch dla_34 --gen_hm --gen_dets
+# used in gen_datasets_multiknob.py
 
 def eval_seq(opt, dataloader, output_root):
     tracker = JDETracker(opt)
