@@ -1,0 +1,37 @@
+train_multiknob:
+    lib/opt - head
+    lib/datasets/dataset/jde - LoadImagesAndLabels, JointDataset_MultiKnob
+    lib/datasets/dataset_factory - get_dataset
+    lib/trains/train_factory - train_factory
+    lib/trains/mot_multiknob - MotTrainer_MultiKnob
+
+track_half_multiknob:
+    lib/tracker/multitrack.py - JDETracker - update_hm
+    lib/datasets/dataset/jde - LoadImages - set_image_size
+
+
+Plan:
+0. understand guassian, check the heatmap size of half and quarter model. Done!
+0. Set configurations at different accuracy-latency levels. Code Done!
+0. Plot the curves. Code Done!
+0. Count the selected configuration. Code Done!
+0. Check the profile, should take average. Code Done!
+0. Verify if multi-res training works
+1. Implement multi-res for multi-knob training, follow the same way. Code Done!
+1. Pre-train on crowdhuman (full, half, quarter)
+2. fine-tune on MOT17 (quarter) to verify if the pre-train works
+3. Multi-res training on MOT17 (full, half, quarter)
+4. Generate detection results and training set, do multi-res training on multiknob model.
+
+
+half: 1000: 152 272
+half: 800:  120 216
+half: 700:  96  176
+half: 600:  88  160
+half: 500:  80  144
+
+quarter: 1000: 152 272
+quarter: 800:  120 216
+quarter: 700:  96 176
+quarter: 600:  88 160
+quarter: 500:  80 144

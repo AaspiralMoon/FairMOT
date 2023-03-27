@@ -66,7 +66,7 @@ class MotLoss_MultiKnob(torch.nn.Module):
                 id_output = self.classifier(id_head).contiguous()
                 id_loss += self.IDLoss(id_output, id_target)
 
-        det_loss = opt.hm_weight * hm_loss + + opt.hmknob_weight * hmknob_loss + opt.wh_weight * wh_loss + opt.off_weight * off_loss
+        det_loss = opt.hm_weight * hm_loss + opt.hmknob_weight * hmknob_loss + opt.wh_weight * wh_loss + opt.off_weight * off_loss
         
         loss = torch.exp(-self.s_det) * det_loss + torch.exp(-self.s_id) * id_loss + (self.s_det + self.s_id)                 # final loss
         loss *= 0.5

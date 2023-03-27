@@ -2,8 +2,6 @@
 # resolution: resize image
 # quantization parameter: change QP of videos
 # model: -
-# extract high quality images from a video: ffmpeg -i MOT17-02-SDP.mp4 -r 30 -q:v 1 -qmin 1 -qmax 1 images/%06d.jpg
-# encode images into a video without quality loss: ffmpeg -f image2 -r 30 -i %06d.jpg -vcodec libx264 -profile:v high444 -refs 16 -crf 0 -preset ultrafast MOT17-02-SDP.mp4
 
 import os
 import os.path as osp
@@ -76,7 +74,6 @@ if __name__ == '__main__':
     imgsize_index = [0, 1, 2, 3, 4]   # (1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
     qp_list = [10, 20, 30, 40, 50]
-    # change_video_qp(data_root, seqs, qp_list)
     # gen_detections(data_root, result_root, model_root, seqs, imgsize_index, model_list, qp_list)
     cmd_str = 'rm -rf {}/*'.format(result_root)             # delete previous results
     os.system(cmd_str)
