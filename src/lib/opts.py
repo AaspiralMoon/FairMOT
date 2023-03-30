@@ -18,7 +18,7 @@ class opts(object):
                              #help='path to pretrained model')
     self.parser.add_argument('--load_model', default='',
                              help='path to pretrained model')
-    self.parser.add_argument('--load_half_model', default='',             # load half and quarter models in JDETracker, default path ../models/quarter-dla_34.pth
+    self.parser.add_argument('--load_half_model', default='',     # load half and quarter models in JDETracker, default path ../models/quarter-dla_34.pth
                              help='path to half model')
     self.parser.add_argument('--load_quarter_model', default='',
                              help='path to quarter model')

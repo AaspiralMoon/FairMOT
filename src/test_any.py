@@ -129,3 +129,8 @@
 
 # # Save the plot as an image
 # plt.savefig('pareto_front.png', dpi=300)
+
+thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
+
+thresholds = [x + 5*0.05 for x in thresholds_preset]
+print(thresholds)

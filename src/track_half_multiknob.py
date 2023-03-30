@@ -51,26 +51,31 @@ def compare_hms(hm, hm_knob):
 #     return best_config
 
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    config_fps_sorted = [11, 14, 8, 13, 10, 7, 5, 4, 12, 9, 2, 6, 1, 3, 0]      # the avg fps of the configurations from high to low
+    config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low
     thresholds = []
+    thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
     if threshold_config == 'C1':
-        for i in range(61, 76):
-            thresholds.append(i/100)
+        thresholds = thresholds_preset
     if threshold_config == 'C2':
-        for i in range(66, 81):
-            thresholds.append(i/100)
+        thresholds = [x + 0.05 for x in thresholds_preset]
     if threshold_config == 'C3':
-        for i in range(71, 86):
-            thresholds.append(i/100)
+        thresholds = [x + 2*0.05 for x in thresholds_preset]
     if threshold_config == 'C4':
-        for i in range(76, 91):
-            thresholds.append(i/100)  
+        thresholds = [x + 3*0.05 for x in thresholds_preset]
     if threshold_config == 'C5':
-        for i in range(81, 96):
-            thresholds.append(i/100)
+        thresholds = [x + 4*0.05 for x in thresholds_preset]
     if threshold_config == 'C6':
-        for i in range(86, 101):
-            thresholds.append(i/100)
+        thresholds = [x + 5*0.05 for x in thresholds_preset]
+    if threshold_config == 'C7':
+        thresholds = [0.8, 99, 99, 0.85, 99, 99, 0.9, 99, 99, 0.95, 99, 99, 1, 99, 99]
+    if threshold_config == 'C8':
+        thresholds = [0, 99, 99, 0.8, 99, 99, 1, 99, 99, 1, 99, 99, 1, 99, 99]
+    if threshold_config == 'C9':
+        thresholds = [0, 99, 99, 0.90, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C10':
+        thresholds = [0, 0.90, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C11':
+        thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -148,24 +153,24 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if frame_id % 20 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
+        if (i % opt.switch_period == 0 or i == start_frame):
+            best_config_idx = 0
         best_config = configs[best_config_idx]
         best_imgsz, best_model = best_config.split('+')
         dataloader.set_image_size(ast.literal_eval(best_imgsz))
         path, img, img0 = dataloader.__getitem__(i)
+        blob = torch.from_numpy(img).cuda().unsqueeze(0)
         # run tracking
         timer.tic()
-        blob = torch.from_numpy(img).cuda().unsqueeze(0)
-        if (i % opt.switch_period ==0 or i == start_frame):
+        if (i % opt.switch_period == 0 or i == start_frame):
             print('Running switching...')
-            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34')
+            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, best_model)
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
             count_config.append(best_config_idx)                                      # count the selected configuration for statistics
         elif best_model == 'full-dla_34':
             online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
-        else: 
+        else:
             online_targets = tracker.update_hm(blob, img0, best_model)
 
         print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i+1)))
@@ -256,7 +261,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(0)
     opt = opts().init()
 
     if not opt.val_mot16:

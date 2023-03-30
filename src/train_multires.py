@@ -1,4 +1,4 @@
-# This script is only for multi-resolution training
+# This script is for multi-resolution training, including original FairMOT, and DeepScale
 # Author: Renjie Xu
 # Time: 2023/3/23
 
@@ -106,7 +106,7 @@ def main(opt):
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(1)
     opt = opts().parse()
     main(opt)
 

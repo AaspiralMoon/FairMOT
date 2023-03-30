@@ -1,33 +1,36 @@
-# This script is only for comparing our model with the baseline
-# Author: Renjie Xu
-# Time: 2023/3/26
-
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
 
-# Create random data with 5 discrete points
-fps = np.array([0, 15, 30, 45, 60])
-mota1 = np.array([0.9, 0.8, 0.75, 0.7, 0.6])
-mota2 = np.array([0.85, 0.77, 0.72, 0.65, 0.55])
-mota3 = np.array([0.8, 0.73, 0.68, 0.6, 0.5])
+full_fps = np.array([16.7, 23.1, 28.3, 30.3, 31.5])               # FPS
+full_mota = np.array([68.5, 66.3, 61.1, 57.6, 53.8])             # MOTA
 
-# Plot the curves
-plt.plot(fps, mota1, marker='o', label='Curve 1', linewidth=2)
-plt.plot(fps, mota2, marker='s', label='Curve 2', linewidth=2)
-plt.plot(fps, mota3, marker='D', label='Curve 3', linewidth=2)
+half_fps = np.array([25.8, 31.6, 35.2, 34.2, 38.4])               # FPS
+half_mota = np.array([66.6, 63.9, 57.8, 55.0, 52.3])            # MOTA
 
-# Customize the plot
-plt.xlabel('FPS')
-plt.ylabel('MOTA')
-plt.legend()
+quarter_fps = np.array([29.1, 34.1, 37.3, 36.2, 37.5])               # FPS
+quarter_mota = np.array([61.5, 59.5, 57.1, 53.1, 48.3])            # MOTA
 
-# Customize axis lines
-ax = plt.gca()
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
+DC_fps = np.array([32.5, 31.4, 29.7, 28.4, 26.0, 23.1])               # FPS
+DC_mota = np.array([57.0, 58.4, 58.2, 59.6, 61.3, 64.3])          # MOTA
 
-# Set tick direction to 'in'
-ax.tick_params(direction='in')
+# Plot the original points
+plt.scatter(full_fps, full_mota, color='red', label='Full-DLA-34')
+plt.scatter(half_fps, half_mota, color='blue', label='Half-DLA-34')
+plt.scatter(quarter_fps, quarter_mota, color='cyan', label='Quarter-DLA-34')
+plt.scatter(DC_fps, DC_mota, color='green', label='DeepScale')
+plt.legend(loc='lower left')
+plt.xlabel("FPS")
+plt.ylabel("MOTA")
+resolutions = ['1088*608', '864*480', '704*384', '640*352', '576*320']
+for i, txt in enumerate(resolutions):
+    plt.annotate(txt, (full_fps[i], full_mota[i]))
+    plt.annotate(txt, (half_fps[i], half_mota[i]))
+    plt.annotate(txt, (quarter_fps[i], quarter_mota[i]))
+
+thresh_settings = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6']
+for i, txt in enumerate(thresh_settings):
+    plt.annotate(txt, (DC_fps[i], DC_mota[i]))
 
 # Save the plot to a file
 plt.savefig('mota_vs_fps.png', dpi=300, bbox_inches='tight')

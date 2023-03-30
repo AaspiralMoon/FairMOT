@@ -186,6 +186,7 @@ class JDETracker(object):
                                   'id': opt.reid_dim}
         if opt.reg_offset:
             heads_for_half_quarter.update({'reg': 2})
+
         if opt.load_half_model:                      
             print('Creating half-dla_34 model...')
             self.half_model = create_model('half-dla_34', heads_for_half_quarter, opt.head_conv)
