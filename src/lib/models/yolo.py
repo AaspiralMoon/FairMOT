@@ -143,16 +143,25 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
 
 
 class PoseYOLOv5s(nn.Module):
-    def __init__(self, heads, config_file):
+    def __init__(self, heads, config_file, yolo_level='full'):
         self.heads = heads
         super(PoseYOLOv5s, self).__init__()
         self.backbone = Model(config_file)
         for head in sorted(self.heads):
             num_output = self.heads[head]
-            fc = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=True),
-                nn.SiLU(),
-                nn.Conv2d(64, num_output, kernel_size=1, stride=1, padding=0))
+            if yolo_level == 'full':
+                fc = nn.Sequential(
+                    nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=True),
+                    nn.SiLU(),
+                    nn.Conv2d(64, num_output, kernel_size=1, stride=1, padding=0))
+            elif yolo_level == 'quarter':
+                fc = nn.Sequential(
+                    nn.Conv2d(16, 16, kernel_size=3, padding=1, bias=True),
+                    nn.SiLU(),
+                    nn.Conv2d(16, num_output, kernel_size=1, stride=1, padding=0))
+            else:
+                raise NotImplementedError
+                
             self.__setattr__(head, fc)
             if 'hm' in head:
                 fc[-1].bias.data.fill_(-2.19)
@@ -189,7 +198,7 @@ def get_pose_net_half(num_layers, heads, head_conv):
         os.path.dirname(__file__),
         '../../../models/yolov5s_half.pt'
     )
-    model = PoseYOLOv5s(heads, config_file, yolo_level = 'quarter')
+    model = PoseYOLOv5s(heads, config_file)
     initialize_weights(model, pretrained)
     return model
 
@@ -202,7 +211,7 @@ def get_pose_net_quarter(num_layers, heads, head_conv):
         os.path.dirname(__file__),
         '../../../models/yolov5s_quarter.pt'
     )
-    model = PoseYOLOv5s(heads, config_file)
+    model = PoseYOLOv5s(heads, config_file, yolo_level='quarter')
     initialize_weights(model, pretrained)
     return model
 

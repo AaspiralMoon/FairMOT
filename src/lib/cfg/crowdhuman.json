@@ -1,5 +1,5 @@
 {
-    "root":"/home/zyf/dataset",
+    "root":"/nfs/u40/xur86/projects/DeepScale/datasets/",
     "train":
     {
         "crowdhuman_train":"./data/crowdhuman.train",

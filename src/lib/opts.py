@@ -51,10 +51,11 @@ class opts(object):
                              help='visualization threshold.')
     
     # model
-    self.parser.add_argument('--arch', default='full-dla_34',                              # --arch dla-34
-                             help='model architecture. Currently tested'              # student model: half/quarter-dla_34
+    self.parser.add_argument('--arch', default='full-dla_34',                            
+                             help='model architecture. Currently tested'             
                                   'resdcn_34 | resdcn_50 | resfpndcn_34 |'
-                                  'full-dla_34 | half-dla_34 | quarter-dla_34 | hrnet_18')
+                                  'full-dla_34 | half-dla_34 | quarter-dla_34 |' 
+                                  'full-yolo | half-yolo | quarter-yolo | hrnet_18')
     self.parser.add_argument('--head_conv', type=int, default=-1,
                              help='conv layer channels for output head'
                                   '0 for no conv layer'

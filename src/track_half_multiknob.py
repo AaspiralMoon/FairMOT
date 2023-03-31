@@ -36,8 +36,8 @@ def compare_hms(hm, hm_knob):
     det_rate_list = []
     hm = _nms(hm)
     hm_knob = _nms(hm_knob)
-    hm = heatmap_to_binary(hm, 0.2)
-    hm_knob = heatmap_to_binary(hm_knob, 0.2)
+    hm = heatmap_to_binary(hm, 0.05) # original 0.2, 0.05 best
+    hm_knob = heatmap_to_binary(hm_knob, 0.05)
     hm = hm.squeeze()                       
     hm_knob = hm_knob.squeeze(0)
     for i in range(hm_knob.shape[0]):
@@ -53,7 +53,7 @@ def compare_hms(hm, hm_knob):
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low
     thresholds = []
-    thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
+    thresholds_preset = [0.61, 0.63, 0.68, 0.62, 0.64, 0.69, 0.65, 0.67, 0.71, 0.66, 0.70, 0.74, 0.73, 0.72, 0.75]
     if threshold_config == 'C1':
         thresholds = thresholds_preset
     if threshold_config == 'C2':
@@ -76,6 +76,12 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [0, 0.90, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C11':
         thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C12':
+        thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C13':
+        thresholds = [0, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95]
+    if threshold_config == 'C14':
+        thresholds = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -83,7 +89,7 @@ def update_config(det_rate_list, threshold_config):                      # the t
         best_config_idx = min((config_fps_sorted.index(candidates), candidates) for candidates in configs_candidates)[1]
     return best_config_idx
 
-def plot_config_distribution(result_root, count_config):
+def plot_config_distribution(result_root, count_config, seq=None):
     count_dict = {}
     configs = []
     imgsz_list = [1088, 864, 704, 640, 576]
@@ -99,16 +105,22 @@ def plot_config_distribution(result_root, count_config):
     # plot and save the pie chart
     labels = list(count_dict.keys())
     sizes = list(count_dict.values())
-    plt.rcParams.update({"font.size": 12})
+    colors = plt.cm.tab20(np.linspace(0, 1, len(configs)))
+    config_colors = {config: colors[i] for i, config in enumerate(configs)}
+    plt.rcParams.update({'font.size': 12})
     wedges, texts, autotexts = plt.pie(
-        sizes, labels=labels, autopct="%.1f%%", startangle=90, textprops=dict(color="w")
+        sizes, labels=labels, colors=[config_colors[label] for label in labels], autopct="%.1f%%", startangle=90, textprops=dict(color='w')
     )
-    plt.axis("equal")
-    plt.title("Distribution of Configurations", fontsize=16)
-    plt.legend(wedges, labels, title="Configurations", loc="lower right", bbox_to_anchor=(1.1, 0), fontsize=10)
-    plt.savefig(osp.join(result_root, 'config_distribution.png'), dpi=300, bbox_inches="tight")
-
-
+    plt.axis('equal')
+    plt.legend(wedges, labels, title='Configurations', loc='lower right', bbox_to_anchor=(1.1, 0), fontsize=10)
+    if seq is None:
+        plt.title('Selected Configurations in ALL', fontsize=14)
+        plt.savefig(osp.join(result_root, 'config_distribution_all.png'), dpi=300, bbox_inches='tight')
+    else:
+        plt.title('Selected Configurations in Seq{}'.format(seq), fontsize=14)
+        plt.savefig(osp.join(result_root, 'config_distribution_{}.png'.format(seq)), dpi=300, bbox_inches='tight')
+    plt.close()
+    plt.clf()
             
 def write_results(filename, results, data_type):
     if data_type == 'mot':
@@ -160,6 +172,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         dataloader.set_image_size(ast.literal_eval(best_imgsz))
         path, img, img0 = dataloader.__getitem__(i)
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
+        count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
         if (i % opt.switch_period == 0 or i == start_frame):
@@ -167,7 +180,6 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             online_targets, hm, hm_knob = tracker.update_hm(blob, img0, best_model)
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
-            count_config.append(best_config_idx)                                      # count the selected configuration for statistics
         elif best_model == 'full-dla_34':
             online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
         else:
@@ -225,6 +237,9 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         nf, ta, tc, count_config = eval_seq(opt, dataloader, data_type, result_filename,
                                     save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
+        count_config_seqs += count_config                                                           # count the selected configurations over all seqs
+        plot_config_distribution(result_root, count_config, seq.split("-")[1])                      # plot and save the selected configuration distribution in each seq
+
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)
@@ -243,8 +258,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     avg_time = all_time / np.sum(timer_calls)
     if opt.is_profiling:
         np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
-    count_config_seqs += count_config
-    plot_config_distribution(result_root, count_config_seqs)                                         # plot and save the selected configuration distribution
+    plot_config_distribution(result_root, count_config_seqs)                                         # plot and save the selected configuration distribution over all seqs
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 
     # get summary
@@ -261,7 +275,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(3)
     opt = opts().init()
 
     if not opt.val_mot16:
