@@ -197,7 +197,7 @@ class JDETracker(object):
 
         if opt.load_quarter_model:                      
             print('Creating quarter-dla_34 model...')
-            self.quarter_model = create_model('quarter-dla_34', heads_for_half_quarter, opt.head_conv)
+            self.quarter_model = create_model('quarter-dla_34', heads_for_half_quarter, opt.head_co nv)
             self.quarter_model = load_model(self.quarter_model, opt.load_quarter_model)
             self.quarter_model = self.quarter_model.to(opt.device)
             self.quarter_model.eval()
