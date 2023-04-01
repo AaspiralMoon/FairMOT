@@ -91,6 +91,8 @@ def main(opt):
         else:
             save_model(os.path.join(opt.save_dir, 'model_last.pth'),
                     epoch, model, optimizer)
+            save_model(os.path.join(opt.save_dir, 'model_IDClassifier_last.pth'),
+                       epoch, trainer.loss.classifier)
         logger.write('\n')
         if epoch in opt.lr_step:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
@@ -102,6 +104,8 @@ def main(opt):
         if epoch % 5 == 0 or epoch >= 10:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
                     epoch, model, optimizer)
+            save_model(os.path.join(opt.save_dir, 'model_IDClassifier_{}.pth'.format(epoch)),
+                        epoch, trainer.loss.classifier)
     logger.close()
 
 

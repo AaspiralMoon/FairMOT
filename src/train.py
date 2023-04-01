@@ -81,6 +81,8 @@ def main(opt):
         else:
             save_model(os.path.join(opt.save_dir, 'model_last.pth'),
                        epoch, model, optimizer)
+            save_model(os.path.join(opt.save_dir, 'model_IDClassifier_last.pth'),
+                       epoch, trainer.loss.classifier)
         logger.write('\n')
         if epoch in opt.lr_step:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
@@ -89,17 +91,19 @@ def main(opt):
             print('Drop LR to', lr)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
-        # if epoch % 5 == 0 or epoch >= 25:
-        #     save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
-        #                epoch, model, optimizer)
-        if epoch % 5 == 0 or epoch >= 300:
+        if epoch % 5 == 0 or epoch >= 25:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
                        epoch, model, optimizer)
+        # if epoch % 5 == 0 or epoch >= 300:
+        #     save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
+        #                epoch, model, optimizer)
+            save_model(os.path.join(opt.save_dir, 'model_IDClassifier_{}.pth'.format(epoch)),
+                        epoch, trainer.loss.classifier)
     logger.close()
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(1)
+    torch.cuda.set_device(0)
     opt = opts().parse()
     main(opt)
 
