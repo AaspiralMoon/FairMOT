@@ -31,8 +31,10 @@ imgsize_list = [1088, 864, 704, 640, 576]
 model_list = ['full', 'half', 'quarter']
 qp_list = [10, 20, 30, 40, 50]
 
+print('Cleaning...')
 cmd_str = 'find {} -type f -name "*.txt" -not -path "*/labels_with_ids/*" -delete'.format(seq_root) # delete all existing txt files
 os.system(cmd_str)
+print('Clean up finished!')
 
 # for seq in seqs:
 #     seq_info = open(osp.join(seq_root, seq, 'seqinfo.ini')).read()

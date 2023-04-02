@@ -31,7 +31,6 @@ class MotLoss(torch.nn.Module):
         self.opt = opt
         self.emb_dim = opt.reid_dim
         self.nID = opt.nID
-        print(self.nID)
         self.classifier = nn.Linear(self.emb_dim, self.nID)
         if opt.id_loss == 'focal':
             torch.nn.init.normal_(self.classifier.weight, std=0.01)

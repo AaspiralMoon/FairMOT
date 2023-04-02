@@ -27,5 +27,5 @@ model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
 
 for idx in imgsz_idx:
     for m in model_list:
-        cmd_str = 'python track_half.py --exp_id {}_{}_without_multires --task mot --load_model ../exp/mot/full_half_quarter_without_multires/{}.pth --imgsize_index {} --arch {}'.format(imgsz_list[idx][0], m[:m.find('-')], m, idx, m)
+        cmd_str = 'python track_half.py --exp_id {}_{}_multires_classifier --task mot --load_model ../exp/mot_multiknob/gen_datasets_multiknob/{}.pth --imgsize_index {} --arch {}'.format(imgsz_list[idx][0], m[:m.find('-')], m, idx, m)
         os.system(cmd_str)

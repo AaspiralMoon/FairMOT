@@ -75,6 +75,8 @@ if __name__ == '__main__':
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
     qp_list = [10, 20, 30, 40, 50]
     # gen_detections(data_root, result_root, model_root, seqs, imgsize_index, model_list, qp_list)
+    print('Cleaning...')
     cmd_str = 'rm -rf {}/*'.format(result_root)             # delete previous results
     os.system(cmd_str)
+    print('Clean up finished!')
     gen_detections(data_root, result_root, model_root, seqs, imgsize_index, model_list)
