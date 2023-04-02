@@ -18,10 +18,16 @@ class opts(object):
                              #help='path to pretrained model')
     self.parser.add_argument('--load_model', default='',
                              help='path to pretrained model')
-    self.parser.add_argument('--load_half_model', default='',     # load half and quarter models in JDETracker, default path ../models/quarter-dla_34.pth
+    self.parser.add_argument('--load_half_model', default='',          # load half and quarter models in JDETracker, default path ../models/quarter-dla_34.pth
                              help='path to half model')
     self.parser.add_argument('--load_quarter_model', default='',
                              help='path to quarter model')
+    self.parser.add_argument('--load_full_classifier', default='',     # load classifiers for full, half and quarter models in JDETracker, default path ../models
+                             help='path to full classifier')
+    self.parser.add_argument('--load_half_classifier', default='',
+                             help='path to half classifier')
+    self.parser.add_argument('--load_quarter_classifier', default='',
+                             help='path to quarter classifier')
     self.parser.add_argument('--resume', action='store_true',
                              help='resume an experiment. '
                                   'Reloaded the optimizer parameter and '

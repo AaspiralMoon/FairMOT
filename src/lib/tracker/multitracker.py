@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from models import *
 from models.decode import mot_decode
 from models.model import create_model, load_model
@@ -201,7 +202,35 @@ class JDETracker(object):
             self.quarter_model = load_model(self.quarter_model, opt.load_quarter_model)
             self.quarter_model = self.quarter_model.to(opt.device)
             self.quarter_model.eval()
-            print('Quarter-dla_34 model created !')                             # changes end here
+            print('Quarter-dla_34 model created !')                            
+
+        if opt.arch =='yolo':
+            reid_dim = 64
+        else:
+            reid_dim = 128       # arch dla_34
+
+        if opt.val_mot15:     
+            num_ids = 502        # number of identities in dataset
+        else:
+            num_ids = 1507       # for MOT17
+
+        if opt.load_full_classifier:
+            print('Creating full classifier...')
+            self.id_full_classifier = nn.Linear(reid_dim, num_ids)
+            self.id_full_classifier = load_model(self.id_full_classifier, opt.load_full_classifier)
+            print('Full classifier created !')
+
+        if opt.load_half_classifier:
+            print('Creating half classifier...')
+            self.id_half_classifier = nn.Linear(reid_dim, num_ids)
+            self.id_half_classifier = load_model(self.id_half_classifier, opt.load_half_classifier)
+            print('Half classifier created !')
+            
+        if opt.load_quarter_classifier:
+            print('Creating quarter classifier...')
+            self.id_quarter_classifier = nn.Linear(reid_dim, num_ids)
+            self.id_quarter_classifier = load_model(self.id_quarter_classifier, opt.load_quarter_classifier)
+            print('Quarter classifier created !')                    # changes end here
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
@@ -444,6 +473,15 @@ class JDETracker(object):
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]
 
+        if self.opt.load_full_classifier and self.opt.load_half_classifier and self.opt.load_quarter_classifier:
+            blob = torch.from_numpy(id_feature).cuda().unsqueeze(0)
+            with torch.no_grad():
+                if model_id == 'full-dla_34':
+                    id_feature = self.id_full_classifier(blob).squeeze(0).cpu().numpy()
+                elif model_id == 'half-dla_34':
+                    id_feature = self.id_half_classifier(blob).squeeze(0).cpu().numpy()
+                elif model_id == 'quarter-dla_34':
+                    id_feature = self.id_quarter_classifier(blob).squeeze(0).cpu().numpy()
         # vis
         '''
         for i in range(0, dets.shape[0]):
