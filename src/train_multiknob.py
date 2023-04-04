@@ -1,7 +1,7 @@
-# screen -S train      create a screen
-# screen -r train      return to the screen
-# python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id multiknob_singleRes --load_model ../models/ctdet_coco_dla_2x.pth --batch_size 16 --num_epochs 150 --gpus 2,3
-# screen -X -S train quit    delete the screen
+# screen -S train            create a screen
+# screen -r train            return to the screen
+# screen -ls                 list all the screens
+# screen -X -S train quit    terminate the screen
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,6 +23,7 @@ from logger import Logger
 from datasets.dataset_factory import get_dataset
 from trains.train_factory import train_factory
 
+#python train_multiknob.py --task mot_multiknob --data_cfg ./lib/cfg/mot17_half_multiknob.json --exp_id multiknob_res_and_model_multires_classifier --batch_size 30 --num_epochs 300 --gpus 1,2,3 --num_workers 8 --lr_step 250,280 --resume
 
 def main(opt):
     torch.manual_seed(opt.seed)
@@ -104,6 +105,6 @@ def main(opt):
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(1)
+    torch.cuda.set_device(2)
     opt = opts().parse()
     main(opt)

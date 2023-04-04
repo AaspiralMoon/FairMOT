@@ -15,10 +15,10 @@ DC_fps = np.array([32.5, 31.4, 29.7, 28.4, 26.0, 23.1])               # FPS
 DC_mota = np.array([57.0, 58.4, 58.2, 59.6, 61.3, 64.3])          # MOTA
 
 # Plot the original points
-plt.scatter(full_fps, full_mota, color='red', label='Full-DLA-34')
-plt.scatter(half_fps, half_mota, color='blue', label='Half-DLA-34')
-plt.scatter(quarter_fps, quarter_mota, color='cyan', label='Quarter-DLA-34')
-plt.scatter(DC_fps, DC_mota, color='green', label='DeepScale')
+plt.scatter(full_fps, full_mota, color='red', marker='o', label='Full-DLA-34')
+plt.scatter(half_fps, half_mota, color='blue', marker='^', label='Half-DLA-34')
+plt.scatter(quarter_fps, quarter_mota, color='cyan', marker='s', label='Quarter-DLA-34')
+plt.scatter(DC_fps, DC_mota, color='green', marker='*', label='DeepScale')
 plt.legend(loc='lower left')
 plt.xlabel("FPS")
 plt.ylabel("MOTA")

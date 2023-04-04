@@ -36,8 +36,8 @@ def compare_hms(hm, hm_knob):
     det_rate_list = []
     hm = _nms(hm)
     hm_knob = _nms(hm_knob)
-    hm = heatmap_to_binary(hm, 0.05) # original 0.2, 0.05 best
-    hm_knob = heatmap_to_binary(hm_knob, 0.05)
+    hm = heatmap_to_binary(hm, 0.4) # original 0.2, 0.05 best
+    hm_knob = heatmap_to_binary(hm_knob, 0.4)
     hm = hm.squeeze()                       
     hm_knob = hm_knob.squeeze(0)
     for i in range(hm_knob.shape[0]):
@@ -53,7 +53,7 @@ def compare_hms(hm, hm_knob):
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low
     thresholds = []
-    thresholds_preset = [0.61, 0.63, 0.68, 0.62, 0.64, 0.69, 0.65, 0.67, 0.71, 0.66, 0.70, 0.74, 0.73, 0.72, 0.75]
+    thresholds_preset = [0.61, 0.63, 0.68, 0.62, 0.64, 0.70, 0.65, 0.67, 0.73, 0.66, 0.69, 0.74, 0.71, 0.72, 0.75]
     if threshold_config == 'C1':
         thresholds = thresholds_preset
     if threshold_config == 'C2':
@@ -275,7 +275,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(3)
+    torch.cuda.set_device(1)
     opt = opts().init()
 
     if not opt.val_mot16:

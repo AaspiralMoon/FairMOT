@@ -218,18 +218,24 @@ class JDETracker(object):
             print('Creating full classifier...')
             self.id_full_classifier = nn.Linear(reid_dim, num_ids)
             self.id_full_classifier = load_model(self.id_full_classifier, opt.load_full_classifier)
+            self.id_full_classifier = self.id_full_classifier.to(opt.device)
+            self.id_full_classifier.eval()
             print('Full classifier created !')
 
         if opt.load_half_classifier:
             print('Creating half classifier...')
             self.id_half_classifier = nn.Linear(reid_dim, num_ids)
             self.id_half_classifier = load_model(self.id_half_classifier, opt.load_half_classifier)
+            self.id_half_classifier = self.id_half_classifier.to(opt.device)
+            self.id_half_classifier.eval()
             print('Half classifier created !')
             
         if opt.load_quarter_classifier:
             print('Creating quarter classifier...')
             self.id_quarter_classifier = nn.Linear(reid_dim, num_ids)
             self.id_quarter_classifier = load_model(self.id_quarter_classifier, opt.load_quarter_classifier)
+            self.id_quarter_classifier = self.id_quarter_classifier.to(opt.device)
+            self.id_quarter_classifier.eval()
             print('Quarter classifier created !')                    # changes end here
 
         self.tracked_stracks = []  # type: list[STrack]
