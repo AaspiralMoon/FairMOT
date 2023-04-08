@@ -49,20 +49,22 @@ if __name__ == '__main__':
             'MOT17-13-SDP']
 
     jpeg_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train'
-    raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob'
+    # raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob'
+    raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_recovered'
     qp_list = [10, 20, 30, 40, 50]
 
-    for seq in seqs:
-        os.system('rm -rf {}/{}/*'.format(raw_root, seq))
+    # for seq in seqs:
+    #     os.system('rm -rf {}/{}/*'.format(raw_root, seq))
 
-    for seq in seqs:
-        input_dir = osp.join(jpeg_root, seq, 'img1')
-        output_dir = osp.join(raw_root, seq, 'raw', 'images')
-        jpeg2raw(input_dir, output_dir)
+    # for seq in seqs:
+    #     input_dir = osp.join(jpeg_root, seq, 'img1')
+    #     output_dir = osp.join(raw_root, seq, 'raw', 'images')
+    #     jpeg2raw(input_dir, output_dir)
 
     for seq in seqs:
         input_dir = osp.join(raw_root, seq, 'raw', 'images')
         output_dir = osp.join(raw_root, seq, 'raw', 'video')
+        mkdir_if_missing(output_dir)
         raw2video(input_dir, output_dir)
 
     change_video_qp(raw_root, seqs, qp_list)

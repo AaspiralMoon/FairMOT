@@ -19,7 +19,7 @@ from logger import Logger
 from datasets.dataset_factory import get_dataset
 from trains.train_factory import train_factory
 
-# python train.py --exp_id test --data_cfg '../src/lib/cfg/mot17_half.json' --load_model ../models/ctdet_coco_dla_2x.pth --batch_size 12 --num_epochs 100
+# python train.py --task mot --exp_id mot17_half_full-dla34_coco_crowdhuman --load_model ../models/crowdhuman_dla34.pth --data_cfg ../src/lib/cfg/mot17_half.json --gpus 0,1 --batch_size 16
 
 def main(opt):
     torch.manual_seed(opt.seed)

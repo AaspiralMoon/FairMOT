@@ -67,7 +67,7 @@ if __name__ == '__main__':
             'MOT17-10-SDP',
             'MOT17-11-SDP',
             'MOT17-13-SDP']
-    model_root = '../exp/mot_multiknob/gen_datasets_multiknob'
+    model_root = '../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman'
     data_root = '../../datasets/MOT17_multiknob'
     result_root = osp.join(data_root, 'results')
     mkdir_if_missing(result_root)

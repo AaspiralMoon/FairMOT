@@ -328,7 +328,7 @@ def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
                 [8, 16, 32, 64, 128, 256],
                 block=BasicBlock, **kwargs)
     if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_half/model_best.pth')
+        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/crowdhuman_half-dla34/model_last.pth')
     return model
 
 def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
@@ -336,7 +336,7 @@ def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
                 [4, 8, 16, 32, 64, 128],
                 block=BasicBlock, **kwargs)    
     if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_quarter/model_best.pth')
+        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/crowdhuman_quarter-dla34/model_last.pth')
     return model
 
 class Identity(nn.Module):

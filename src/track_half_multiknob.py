@@ -67,21 +67,16 @@ def update_config(det_rate_list, threshold_config):                      # the t
     if threshold_config == 'C6':
         thresholds = [x + 5*0.05 for x in thresholds_preset]
     if threshold_config == 'C7':
-        thresholds = [0.8, 99, 99, 0.85, 99, 99, 0.9, 99, 99, 0.95, 99, 99, 1, 99, 99]
+        thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98]
     if threshold_config == 'C8':
-        thresholds = [0, 99, 99, 0.8, 99, 99, 1, 99, 99, 1, 99, 99, 1, 99, 99]
+        thresholds = [99, 0, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98]
     if threshold_config == 'C9':
-        thresholds = [0, 99, 99, 0.90, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+        thresholds = [0, 99, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C10':
-        thresholds = [0, 0.90, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+        thresholds = [0, 0.98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C11':
         thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C12':
-        thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C13':
-        thresholds = [0, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95]
-    if threshold_config == 'C14':
-        thresholds = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -275,7 +270,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(1)
+    torch.cuda.set_device(3)
     opt = opts().init()
 
     if not opt.val_mot16:
