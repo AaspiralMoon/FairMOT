@@ -36,7 +36,7 @@ def compare_hms(hm, hm_knob):
     det_rate_list = []
     hm = _nms(hm)
     hm_knob = _nms(hm_knob)
-    hm = heatmap_to_binary(hm, 0.4) # original 0.2, 0.05 best
+    hm = heatmap_to_binary(hm, 0.4)
     hm_knob = heatmap_to_binary(hm_knob, 0.4)
     hm = hm.squeeze()                       
     hm_knob = hm_knob.squeeze(0)
@@ -44,14 +44,8 @@ def compare_hms(hm, hm_knob):
         det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return det_rate_list
 
-# def update_config(det_rate_list, threshold):                      # the threshold is the same for all configurations                
-#     config_fps_sorted = [11, 14, 8, 13, 10, 7, 5, 4, 12, 9, 2, 6, 1, 3, 0]      # the avg fps of the configurations from high to low
-#     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > threshold]
-#     best_config = min((config_fps_sorted.index(candidates), candidates) for candidates in configs_candidates)[1]
-#     return best_config
-
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low
+    config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
     thresholds = []
     thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
     if threshold_config == 'C1':
@@ -68,6 +62,9 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [x + 5*0.05 for x in thresholds_preset]
     if threshold_config == 'C7':
         thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98]
+        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 0.98, 1, 1]  # 70.0 20.1
+        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.1 20.4
+        # thresholds = [0, 0.98, 1, 0.98, 0.98, 1, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.2 20.2
     if threshold_config == 'C8':
         thresholds = [99, 0, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98]
     if threshold_config == 'C9':
