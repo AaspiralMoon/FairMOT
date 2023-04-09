@@ -53,7 +53,7 @@ def compare_hms(hm, hm_knob):
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low
     thresholds = []
-    thresholds_preset = [0.61, 0.63, 0.68, 0.62, 0.64, 0.70, 0.65, 0.67, 0.73, 0.66, 0.69, 0.74, 0.71, 0.72, 0.75]
+    thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
     if threshold_config == 'C1':
         thresholds = thresholds_preset
     if threshold_config == 'C2':
@@ -172,11 +172,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.tic()
         if (i % opt.switch_period == 0 or i == start_frame):
             print('Running switching...')
-            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, best_model)
+            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
-        elif best_model == 'full-dla_34':
-            online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
         else:
             online_targets = tracker.update_hm(blob, img0, best_model)
 

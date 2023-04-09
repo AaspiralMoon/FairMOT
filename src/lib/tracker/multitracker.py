@@ -182,15 +182,23 @@ class JDETracker(object):
         self.model = self.model.to(opt.device)
         self.model.eval()              
 
-        heads_for_half_quarter = {'hm': opt.num_classes,                    # changes start here
+        heads_for_full_half_quarter = {'hm': opt.num_classes,                    # changes start here
                                   'wh': 2 if not opt.ltrb else 4,
                                   'id': opt.reid_dim}
         if opt.reg_offset:
-            heads_for_half_quarter.update({'reg': 2})
+            heads_for_full_half_quarter.update({'reg': 2})
+
+        if opt.load_full_model:                      
+            print('Creating full-dla_34 model...')
+            self.full_model = create_model('full-dla_34', heads_for_full_half_quarter, opt.head_conv)
+            self.full_model = load_model(self.full_model, opt.load_full_model)
+            self.full_model = self.full_model.to(opt.device)
+            self.full_model.eval()
+            print('Full-dla_34 model created !')
 
         if opt.load_half_model:                      
             print('Creating half-dla_34 model...')
-            self.half_model = create_model('half-dla_34', heads_for_half_quarter, opt.head_conv)
+            self.half_model = create_model('half-dla_34', heads_for_full_half_quarter, opt.head_conv)
             self.half_model = load_model(self.half_model, opt.load_half_model)
             self.half_model = self.half_model.to(opt.device)
             self.half_model.eval()
@@ -198,7 +206,7 @@ class JDETracker(object):
 
         if opt.load_quarter_model:                      
             print('Creating quarter-dla_34 model...')
-            self.quarter_model = create_model('quarter-dla_34', heads_for_half_quarter, opt.head_conv)
+            self.quarter_model = create_model('quarter-dla_34', heads_for_full_half_quarter, opt.head_conv)
             self.quarter_model = load_model(self.quarter_model, opt.load_quarter_model)
             self.quarter_model = self.quarter_model.to(opt.device)
             self.quarter_model.eval()
@@ -454,9 +462,11 @@ class JDETracker(object):
 
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
-            if model_id == 'full-dla_34':
+            if model_id == 'full-dla_34-multiknob':
                 output = self.model(im_blob)[-1]
                 hm_knob = output['hmknob'].sigmoid_()
+            elif model_id == 'full-dla_34':
+                output = self.full_model(im_blob)[-1]
             elif model_id == 'half-dla_34':
                 output = self.half_model(im_blob)[-1]
             elif model_id == 'quarter-dla_34':
@@ -603,7 +613,7 @@ class JDETracker(object):
         logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
         
-        if model_id == 'full-dla_34':
+        if model_id == 'full-dla_34-multiknob':
             return output_stracks, hm, hm_knob
         else:
             return output_stracks
