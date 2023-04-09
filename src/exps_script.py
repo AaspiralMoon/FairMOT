@@ -10,7 +10,7 @@ sp_list = [40]
 thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
 for sp in sp_list:
     for thresh in thresh_list:
-        cmd_str = 'python track_half_multiknob.py --exp_id multiknob_{}_{}_separate --task mot_multiknob \
+        cmd_str = 'python track_half_multiknob.py --exp_id multiknob_{}_{}_separate_0.2 --task mot_multiknob \
                 --load_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/full-dla_34-multiknob.pth \
                 --load_full_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/full-dla_34.pth \
                 --load_half_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/half-dla_34.pth \

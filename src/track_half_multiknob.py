@@ -36,8 +36,8 @@ def compare_hms(hm, hm_knob):
     det_rate_list = []
     hm = _nms(hm)
     hm_knob = _nms(hm_knob)
-    hm = heatmap_to_binary(hm, 0.4)
-    hm_knob = heatmap_to_binary(hm_knob, 0.4)
+    hm = heatmap_to_binary(hm, 0.8)
+    hm_knob = heatmap_to_binary(hm_knob, 0.8)
     hm = hm.squeeze()                       
     hm_knob = hm_knob.squeeze(0)
     for i in range(hm_knob.shape[0]):
