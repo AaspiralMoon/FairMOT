@@ -44,14 +44,7 @@ def compare_hms(hm, hm_knob):
         det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return det_rate_list
 
-# def update_config(det_rate_list, threshold):                      # the threshold is the same for all configurations                
-#     config_fps_sorted = [11, 14, 8, 13, 10, 7, 5, 4, 12, 9, 2, 6, 1, 3, 0]      # the avg fps of the configurations from high to low
-#     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > threshold]
-#     best_config = min((config_fps_sorted.index(candidates), candidates) for candidates in configs_candidates)[1]
-#     return best_config
-
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    # config_fps_sorted = [11, 14, 13, 8, 10, 7, 12, 5, 9, 4, 6, 2, 3, 1, 0]      # the avg fps of the configurations from high to low: averaged by 3 runs
     config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
     thresholds = []
     thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
