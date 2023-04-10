@@ -11,9 +11,9 @@ thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11
 for sp in sp_list:
     for thresh in thresh_list:
         cmd_str = 'python track_half_multiknob.py --exp_id multiknob_{}_{} --task mot_multiknob \
-                --load_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/full-dla_34-multiknob.pth \
-                --load_half_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/half-dla_34.pth \
-                --load_quarter_model ../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman/quarter-dla_34.pth \
+                --load_model ../exp/mot_multiknob/gen_datasets_multiknob/full-dla_34-multiknob.pth \
+                --load_half_model ../exp/mot_multiknob/gen_datasets_multiknob/half-dla_34.pth \
+                --load_quarter_model ../exp/mot_multiknob/gen_datasets_multiknob/quarter-dla_34.pth \
                 --switch_period {} --threshold_config {}'.format(sp, thresh, sp, thresh)
         os.system(cmd_str)
 
