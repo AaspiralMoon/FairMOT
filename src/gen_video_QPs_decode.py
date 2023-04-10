@@ -13,6 +13,7 @@ def mkdir_if_missing(d):
         os.makedirs(d)
 
 def jpeg2raw(input_dir, output_dir):
+    mkdir_if_missing(output_dir)
     # loop through all the JPEG files in the input directory
     for file in os.listdir(input_dir):
         if file.endswith('.jpg') or file.endswith('.jpeg'):
@@ -20,6 +21,7 @@ def jpeg2raw(input_dir, output_dir):
             cv2.imwrite(os.path.join(output_dir, file.replace('.jpg', '.png')), img)
 
 def raw2video(input_dir, output_dir):
+    mkdir_if_missing(output_dir)
     cmd_str = 'ffmpeg -i {}/%06d.png -c:v libx264 -preset veryslow -qp 0 {}/output.mp4'.format(input_dir, output_dir)
     os.system(cmd_str)
 
@@ -49,11 +51,11 @@ if __name__ == '__main__':
             'MOT17-13-SDP']
 
     jpeg_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train'
-    # raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob'
-    raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_recovered'
-    qp_list = [10, 20, 30, 40, 50]
-
+    raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob'
+    # qp_list = [25, 30, 35, 40]
+    qp_list = [20]
     # for seq in seqs:
+    #     print('Cleaning {}'.format(seq))
     #     os.system('rm -rf {}/{}/*'.format(raw_root, seq))
 
     # for seq in seqs:
@@ -61,10 +63,9 @@ if __name__ == '__main__':
     #     output_dir = osp.join(raw_root, seq, 'raw', 'images')
     #     jpeg2raw(input_dir, output_dir)
 
-    for seq in seqs:
-        input_dir = osp.join(raw_root, seq, 'raw', 'images')
-        output_dir = osp.join(raw_root, seq, 'raw', 'video')
-        mkdir_if_missing(output_dir)
-        raw2video(input_dir, output_dir)
+    # for seq in seqs:
+    #     input_dir = osp.join(raw_root, seq, 'raw', 'images')
+    #     output_dir = osp.join(raw_root, seq, 'raw', 'video')
+    #     raw2video(input_dir, output_dir)
 
     change_video_qp(raw_root, seqs, qp_list)

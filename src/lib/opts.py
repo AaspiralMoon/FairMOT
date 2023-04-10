@@ -261,7 +261,7 @@ class opts(object):
         imgsize_index = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
         opt.img_size = imgsize_index[opt.imgsize_index]
     elif opt.task == 'mot_multiknob':
-      opt.heads = {'hm': opt.num_classes, 'hmknob': 15,
+      opt.heads = {'hm': opt.num_classes, 'hmknob': 5,
                    'wh': 2 if not opt.ltrb else 4,
                    'id': opt.reid_dim}
       if opt.reg_offset:

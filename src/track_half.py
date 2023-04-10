@@ -131,8 +131,10 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         output_dir = os.path.join(data_root, '..', 'outputs', exp_name, seq) if save_images or save_videos else None
         logger.info('start seq: {}'.format(seq))
         if opt.qp != -1:
-            dataloader = datasets.LoadImages(osp.join('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob', seq, 'QP_{}'.format(opt.qp), 'images'), opt.img_size)  # run tracking on the images at different QPs
-        dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
+            print('Loading dataset at QP={}'.format(opt.qp))
+            dataloader = datasets.LoadImages(osp.join('../../datasets/MOT17_multiknob', seq, 'QP_{}'.format(opt.qp), 'images'), opt.img_size)  # run tracking on the images at different QPs
+        else:
+            dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         if opt.gen_hm:
             gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
@@ -238,7 +240,8 @@ if __name__ == '__main__':
                       MOT17-05-SDP
                       MOT17-09-SDP
                       MOT17-10-SDP
-                      MOT17-11-SDP'''
+                      MOT17-11-SDP
+                      MOT17-13-SDP'''
         # seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:
