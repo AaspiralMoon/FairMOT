@@ -52,6 +52,10 @@ def update_config(det_rate_list, threshold_config):
         thresholds = [0, 0, 0.98, 0.98, 0.98]
     if threshold_config == 'C3':
         thresholds = [0, 0.98, 99, 99, 99]
+    if threshold_config == 'C4':
+        thresholds = [0, 99, 0.98, 0.98, 0.98]
+    if threshold_config == 'C5':
+        thresholds = [0, 99, 0.99, 99, 99]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
