@@ -44,36 +44,14 @@ def compare_hms(hm, hm_knob):
         det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return det_rate_list
 
-def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
-    thresholds = []
-    thresholds_preset = [0.61, 0.66, 0.71, 0.62, 0.67, 0.72, 0.63, 0.68, 0.73, 0.64, 0.69, 0.74, 0.65, 0.70, 0.75]
+def update_config(det_rate_list, threshold_config):                                  
+    config_fps_sorted = [4, 3, 2, 1, 0]
     if threshold_config == 'C1':
-        thresholds = thresholds_preset
+        thresholds = [0, 0, 0, 0.98, 0.98]
     if threshold_config == 'C2':
-        thresholds = [x + 0.05 for x in thresholds_preset]
+        thresholds = [0, 0, 0.98, 0.98, 0.98]
     if threshold_config == 'C3':
-        thresholds = [x + 2*0.05 for x in thresholds_preset]
-    if threshold_config == 'C4':
-        thresholds = [x + 3*0.05 for x in thresholds_preset]
-    if threshold_config == 'C5':
-        thresholds = [x + 4*0.05 for x in thresholds_preset]
-    if threshold_config == 'C6':
-        thresholds = [x + 5*0.05 for x in thresholds_preset]
-    if threshold_config == 'C7':
-        thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98]
-        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 0.98, 1, 1]  # 70.0 20.1
-        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.1 20.4
-        # thresholds = [0, 0.98, 1, 0.98, 0.98, 1, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.2 20.2
-    if threshold_config == 'C8':
-        thresholds = [99, 0, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98]
-    if threshold_config == 'C9':
-        thresholds = [0, 99, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C10':
-        thresholds = [0, 0.98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C11':
-        thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-
+        thresholds = [0, 0.98, 99, 99, 99]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -84,11 +62,9 @@ def update_config(det_rate_list, threshold_config):                      # the t
 def plot_config_distribution(result_root, count_config, seq=None):
     count_dict = {}
     configs = []
-    imgsz_list = [1088, 864, 704, 640, 576]
-    model_list = ['full', 'half', 'quarter']
-    for imgsz in imgsz_list:
-        for m in model_list:
-            configs.append('{}_{}'.format(imgsz, m))
+    qp_list = [20, 25, 30, 35, 40]
+    for qp in qp_list:
+        configs.append('{}'.format(qp))
     for config_idx in count_config:
         if configs[config_idx] in count_dict:
             count_dict[configs[config_idx]] += 1
@@ -138,12 +114,10 @@ def write_results(filename, results, data_type):
 
 
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
-    imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    qp_list = [20, 25, 30, 35, 40]
     configs = []
-    for imgsz in imgsz_list:
-        for m in model_list:
-            configs.append('{}+{}'.format(imgsz, m))
+    for qp in qp_list:
+        configs.append('{}'.format(qp))
     if save_dir:
         mkdir_if_missing(save_dir)
     tracker = JDETracker(opt, frame_rate=frame_rate)
@@ -159,9 +133,8 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             continue
         if (i % opt.switch_period == 0 or i == start_frame):
             best_config_idx = 0
-        best_config = configs[best_config_idx]
-        best_imgsz, best_model = best_config.split('+')
-        dataloader.set_image_size(ast.literal_eval(best_imgsz))
+        best_qp = configs[best_config_idx]
+        dataloader.set_img_qp_path(best_qp)
         path, img, img0 = dataloader.__getitem__(i)
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
         count_config.append(best_config_idx)                                          # count the selected configuration for statistics
@@ -173,9 +146,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
-            online_targets = tracker.update_hm(blob, img0, best_model)
+            online_targets = tracker.update_hm(blob, img0, 'full-dla_34')
 
-        print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i+1)))
+        print('Running qp={} on image: {}'.format(best_qp, str(i+1)))
         online_tlwhs = []
         online_ids = []        
         #online_scores = []
@@ -220,7 +193,11 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     for seq in seqs:
         output_dir = os.path.join(data_root, '..', 'outputs', exp_name, seq) if save_images or save_videos else None
         logger.info('start seq: {}'.format(seq))
-        dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
+        if opt.qp != -1:
+            print('Loading dataset at QP={}'.format(opt.qp))
+            dataloader = datasets.LoadImages(osp.join('../../datasets/MOT17_multiknob', seq, 'QP_{}'.format(opt.qp), 'images'), opt.img_size)  # run tracking on the images at different QPs
+        else:
+            dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
@@ -265,7 +242,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(2)
     opt = opts().init()
 
     if not opt.val_mot16:
@@ -324,8 +301,8 @@ if __name__ == '__main__':
                       MOT17-05-SDP
                       MOT17-09-SDP
                       MOT17-10-SDP
-                      MOT17-11-SDP'''
-        # seqs_str = '''MOT17-02-SDP'''
+                      MOT17-11-SDP
+                      MOT17-13-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:
         seqs_str = '''Venice-2

@@ -64,6 +64,7 @@ class LoadImages:  # for inference
     def __getitem__(self, idx):
         idx = idx % self.nF
         img_path = self.files[idx]
+        img_path = img_path.replace('QP_20', 'QP_{}'.format(self.qp))
 
         # Read image
         img0 = cv2.imread(img_path)  # BGR
@@ -84,6 +85,9 @@ class LoadImages:  # for inference
     
     def set_image_size(self, img_size=(1088, 608)):
         self.width, self.height = img_size
+
+    def set_img_qp_path(self, qp):
+        self.qp = qp
 
 class LoadVideo:  # for inference
     def __init__(self, path, img_size=(1088, 608)):
