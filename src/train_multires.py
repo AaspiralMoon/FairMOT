@@ -60,33 +60,30 @@ def main(opt):
         model, optimizer, start_epoch = load_model(
             model, opt.load_model, trainer.optimizer, opt.resume, opt.lr, opt.lr_step)
     if opt.multi_res_train:
-        resolutions = [(1088, 608),(864, 480),(704, 384),(640, 352),(576, 320)]
-        # resolutions = [(576, 320),(640, 352),(704, 384),(864, 480),(1088, 608)]
+        resolutions = [(576, 320),(640, 352),(704, 384),(864, 480),(1088, 608)]
     else:
         resolutions = [(1088, 608)]
 
-    resolution_epochs = int(0.2 * opt.num_epochs)
-
     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
         mark = epoch if opt.save_all else 'last'
-        current_resolution = resolutions[min(epoch // resolution_epochs, len(resolutions) - 1)]
-        print('Setting resolution: ', current_resolution)
-        dataset = Dataset(opt, dataset_root, trainset_paths, current_resolution, augment=True, transforms=transforms)
-        opt = opts().update_dataset_info_and_set_heads(opt, dataset)
-        train_loader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=opt.batch_size,
-        shuffle=True,
-        num_workers=opt.num_workers,
-        pin_memory=True,
-        drop_last=True)
+        for res in resolutions:
+            print('Setting resolution: ', res)
+            dataset = Dataset(opt, dataset_root, trainset_paths, res, augment=True, transforms=transforms)
+            opt = opts().update_dataset_info_and_set_heads(opt, dataset)
+            train_loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=opt.batch_size,
+            shuffle=True,
+            num_workers=opt.num_workers,
+            pin_memory=True,
+            drop_last=True)
 
-        # continue
-        log_dict_train, _ = trainer.train(epoch, train_loader)
-        logger.write('epoch: {} |'.format(epoch))
-        for k, v in log_dict_train.items():
-            logger.scalar_summary('train_{}'.format(k), v, epoch)
-            logger.write('{} {:8f} | '.format(k, v))
+            # continue
+            log_dict_train, _ = trainer.train(epoch, train_loader)
+            logger.write('epoch: {} |'.format(epoch))
+            for k, v in log_dict_train.items():
+                logger.scalar_summary('train_{}'.format(k), v, epoch)
+                logger.write('{} {:8f} | '.format(k, v))
 
         if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(mark)),
@@ -116,4 +113,3 @@ if __name__ == '__main__':
     torch.cuda.set_device(0)
     opt = opts().parse()
     main(opt)
-
