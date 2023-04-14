@@ -60,7 +60,8 @@ def main(opt):
         model, optimizer, start_epoch = load_model(
             model, opt.load_model, trainer.optimizer, opt.resume, opt.lr, opt.lr_step)
     if opt.multi_res_train:
-        resolutions = [(576, 320),(640, 352),(704, 384),(864, 480),(1088, 608)]
+        resolutions = [(1088, 608),(864, 480),(704, 384),(640, 352),(576, 320)]
+        # resolutions = [(576, 320),(640, 352),(704, 384),(864, 480),(1088, 608)]
     else:
         resolutions = [(1088, 608)]
 
