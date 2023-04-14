@@ -17,7 +17,7 @@ from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
 from .base_trainer import BaseTrainer
-
+from models.model import load_model
 
 class MotLoss(torch.nn.Module):
     def __init__(self, opt):
@@ -37,6 +37,8 @@ class MotLoss(torch.nn.Module):
             prior_prob = 0.01
             bias_value = -math.log((1 - prior_prob) / prior_prob)
             torch.nn.init.constant_(self.classifier.bias, bias_value)
+        if opt.load_classifier_weights:
+            self.classifier = load_model(self.classifier, opt.load_classifier_weights)
         self.IDLoss = nn.CrossEntropyLoss(ignore_index=-1)
         self.emb_scale = math.sqrt(2) * math.log(self.nID - 1)
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))
