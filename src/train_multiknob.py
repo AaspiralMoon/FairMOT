@@ -96,7 +96,7 @@ def main(opt):
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
         # if epoch % 5 == 0 or epoch >= 25:
-        if epoch % 5 == 0 or epoch >= 60:
+        if epoch % 5 == 0 or epoch >= 10:
             save_model(os.path.join(opt.save_dir, 'model_{}.pth'.format(epoch)),
                        epoch, model, optimizer)
             save_model(os.path.join(opt.save_dir, 'model_IDClassifier_{}.pth'.format(epoch)),
@@ -105,6 +105,6 @@ def main(opt):
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(2)
     opt = opts().parse()
     main(opt)
