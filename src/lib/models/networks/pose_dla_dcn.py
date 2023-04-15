@@ -327,16 +327,16 @@ def dla34_half(pretrained=True, **kwargs):  # DLA-34 half
     model = DLA([1, 1, 1, 2, 2, 1],
                 [8, 16, 32, 64, 128, 256],
                 block=BasicBlock, **kwargs)
-    if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_half-dla34/model_best.pth')
+    # if pretrained:
+    #     model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_half-dla34/model_best.pth')
     return model
 
 def dla34_quarter(pretrained=True, **kwargs):  # DLA-34 quarter
     model = DLA([1, 1, 1, 2, 2, 1],
                 [4, 8, 16, 32, 64, 128],
-                block=BasicBlock, **kwargs)    
-    if pretrained:
-        model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_quarter-dla34/model_best.pth')
+                block=BasicBlock, **kwargs)
+    # if pretrained:
+    #     model.load_pretrained_file('/nfs/u40/xur86/projects/DeepScale/CenterNet/exp/ctdet/coco_quarter-dla34/model_best.pth')
     return model
 
 class Identity(nn.Module):
