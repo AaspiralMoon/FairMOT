@@ -62,7 +62,7 @@ def main(opt):
     if opt.multi_res_train:
         # resolutions = [(1088, 608),(864, 480),(704, 384),(640, 352),(576, 320)]
         resolutions = [(576, 320),(640, 352),(704, 384),(864, 480),(1088, 608)]
-        res_weights = [0.2, 0.4, 0.6, 0.8, 1.0]
+        res_weights = [0.1, 0.2, 0.3, 0.4, 1.0]
     else:
         resolutions = [(1088, 608)]
         res_weights = [1.0]
