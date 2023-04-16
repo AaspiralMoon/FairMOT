@@ -9,6 +9,7 @@ import os
 
 from .networks.dlav0 import get_pose_net as get_dlav0
 from .networks.pose_dla_dcn import get_pose_net as get_dla_dcn
+from .networks.pose_dla_dcn import get_pose_net_freeze as get_dla_dcn_freeze
 from .networks.pose_dla_dcn import get_pose_net_quarter as get_dla_dcn_quarter
 from .networks.pose_dla_dcn import get_pose_net_half as get_dla_dcn_half
 from .networks.resnet_dcn import get_pose_net as get_pose_net_dcn
@@ -22,6 +23,7 @@ from .yolo import get_pose_net_quarter as get_pose_net_yolo_quarter
 _model_factory = {
   'dlav0': get_dlav0, # default DLAup
   'full-dla': get_dla_dcn,
+  'freeze-full-dla': get_dla_dcn_freeze,
   'half-dla': get_dla_dcn_half,
   'quarter-dla': get_dla_dcn_quarter,
   'dlaconv': get_dla_conv,
