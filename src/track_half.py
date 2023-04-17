@@ -181,7 +181,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(2)
+    torch.cuda.set_device(3)
     opt = opts().init()
 
     if not opt.val_mot16:
@@ -240,8 +240,7 @@ if __name__ == '__main__':
                       MOT17-05-SDP
                       MOT17-09-SDP
                       MOT17-10-SDP
-                      MOT17-11-SDP
-                      MOT17-13-SDP'''
+                      MOT17-11-SDP'''
         # seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:

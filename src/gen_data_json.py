@@ -26,6 +26,6 @@ input_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/src/data/mot17_multiknob
 with open(input_path, 'r') as file:
     for line in file:
         line = line.strip()
-        line_new = line.replace('MOT17_multiknob/train', 'MOT17_recovered').replace('img1', 'raw/images')
+        line_new = line.replace('MOT17_multiknob/train', 'MOT17_recovered').replace('img1', 'raw/images').replace('jpg', 'png')
         with open(result_path, 'a+') as f:
             f.write(line_new + '\n')
