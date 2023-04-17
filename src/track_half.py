@@ -132,7 +132,8 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         logger.info('start seq: {}'.format(seq))
         if opt.qp != -1:
             dataloader = datasets.LoadImages(osp.join('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob', seq, 'QP_{}'.format(opt.qp), 'images'), opt.img_size)  # run tracking on the images at different QPs
-        dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
+        else:
+            dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         if opt.gen_hm:
             gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
@@ -179,7 +180,6 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(3)
     opt = opts().init()
 
     if not opt.val_mot16:
