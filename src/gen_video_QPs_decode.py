@@ -53,7 +53,7 @@ if __name__ == '__main__':
     jpeg_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train'
     raw_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob'
     # qp_list = [25, 30, 35, 40]
-    qp_list = [20]
+    qp_list = [i for i in range(35, 46)]
     # for seq in seqs:
     #     print('Cleaning {}'.format(seq))
     #     os.system('rm -rf {}/{}/*'.format(raw_root, seq))
@@ -67,5 +67,9 @@ if __name__ == '__main__':
     #     input_dir = osp.join(raw_root, seq, 'raw', 'images')
     #     output_dir = osp.join(raw_root, seq, 'raw', 'video')
     #     raw2video(input_dir, output_dir)
-
+    
+    # cmd_str = 'find {} -type d -name "QP_*" -exec rm -r {} \;'.format(raw_root)       # clean up
+    # print('Cleaning...')
+    # os.system(cmd_str)
+    # print('Clean up completed!')
     change_video_qp(raw_root, seqs, qp_list)
