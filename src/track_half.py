@@ -72,9 +72,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         blob = torch.from_numpy(img).cuda().unsqueeze(0)
 
         if opt.gen_dets:
-            len_dets, online_targets = tracker.update(blob, img0)
+            dets, online_targets = tracker.update(blob, img0)
             with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
-                np.savetxt(f, np.array(len_dets).reshape(1, -1), '%.1f')
+                np.savetxt(f, dets, '%.4f')
         elif opt.gen_hm:
             hm, online_targets = tracker.update(blob, img0)
             with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:

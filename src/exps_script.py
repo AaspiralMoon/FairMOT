@@ -38,6 +38,7 @@ for qp in qp_list:
                       --exp_id qp_{} \
                       --task mot \
                       --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot/mot17_half_full-dla34_coco_crowdhuman/model_30.pth \
+                      --gen_dets \
                       --qp {}'.format(qp, qp)
     os.system(cmd_str)
     
