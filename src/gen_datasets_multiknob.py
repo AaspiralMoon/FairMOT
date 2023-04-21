@@ -53,7 +53,7 @@ def gen_detections(data_root, result_root, model_root, seqs, imgsize_index, mode
     for seq in seqs:
         for idx in imgsize_index:
             for m in model_list:
-                img_path = osp.join(data_root, seq, 'QP_0', 'images')
+                img_path = osp.join(data_root, 'train', seq, 'img1')
                 result_path = osp.join(result_root, seq, '{}_{}'.format(imgsize_list[idx][0], m[:m.find('-')]))
                 mkdir_if_missing(result_path)
                 cmd_str = 'python gen_detections.py --data_dir {} --output_root {} --load_model {}/{}.pth --imgsize_index {} --arch {} --gen_dets'.format(img_path, result_path, model_root, m, idx, m)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
             'MOT17-10-SDP',
             'MOT17-11-SDP',
             'MOT17-13-SDP']
-    model_root = '../exp/mot_multiknob/gen_datasets_multiknob_full_crowdhuman'
+    model_root = '../models'
     data_root = '../../datasets/MOT17_multiknob'
     result_root = osp.join(data_root, 'results')
     mkdir_if_missing(result_root)

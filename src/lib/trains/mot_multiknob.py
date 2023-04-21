@@ -17,7 +17,7 @@ from models.decode import mot_decode
 from models.utils import _sigmoid, _tranpose_and_gather_feat
 from utils.post_process import ctdet_post_process
 from .base_trainer import BaseTrainer
-
+from models.model import load_model
 
 class MotLoss_MultiKnob(torch.nn.Module):
     def __init__(self, opt):
@@ -32,6 +32,12 @@ class MotLoss_MultiKnob(torch.nn.Module):
         self.emb_dim = opt.reid_dim
         self.nID = opt.nID
         self.classifier = nn.Linear(self.emb_dim, self.nID)
+        if opt.load_classifier_weights:
+            self.classifier = load_model(self.classifier, opt.load_classifier_weights)
+        if opt.arch == 'freeze-full-dla_34':
+            print('The classifier is frozen...')
+            for param in self.classifier.parameters():
+                param.requires_grad = False
         self.IDLoss = nn.CrossEntropyLoss(ignore_index=-1)
         self.emb_scale = math.sqrt(2) * math.log(self.nID - 1)
         self.s_det = nn.Parameter(-1.85 * torch.ones(1))
