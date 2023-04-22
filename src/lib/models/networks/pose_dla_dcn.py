@@ -506,25 +506,6 @@ class DLASeg(nn.Module):
             z[head] = self.__getattr__(head)(y[-1])
         return [z]
 
-    # def freeze_except_multiknob_head(self):
-    #     # Freeze the backbone network
-    #     for param in self.base.parameters():
-    #         param.requires_grad = False
-
-    #     # Freeze the dla_up layer
-    #     for param in self.dla_up.parameters():
-    #         param.requires_grad = False
-
-    #     # Freeze the ida_up layer
-    #     for param in self.ida_up.parameters():
-    #         param.requires_grad = False
-
-    #     # Freeze all heads except the second head ('hmknob' in this case)
-    #     for head in self.heads:
-    #         if head != 'hmknob':
-    #             for param in self.__getattr__(head).parameters():
-    #                 param.requires_grad = False
-
     def freeze_except_multiknob_head(self):
         def freeze_parameters(parameters, freeze=True):
             for param in parameters:
@@ -547,7 +528,7 @@ class DLASeg(nn.Module):
         freeze_parameters(self.ida_up.parameters())
         freeze_bn(self.ida_up)
 
-        # Freeze all heads except the second head ('hmknob' in this case)
+        # Freeze all heads except the hmknob head
         for head in self.heads:
             if head != 'hmknob':
                 freeze_parameters(self.__getattr__(head).parameters())
@@ -561,17 +542,6 @@ def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
                    final_kernel=1,
                    last_level=5,
                    head_conv=head_conv)
-    return model
-
-def get_pose_net_freeze(num_layers, heads, head_conv=256, down_ratio=4):
-    model = DLASeg('dla{}'.format(num_layers), heads,
-                   pretrained=True,
-                   down_ratio=down_ratio,
-                   final_kernel=1,
-                   last_level=5,
-                   head_conv=head_conv)
-    model.freeze_except_multiknob_head()
-    print('Layers are frozen...')
     return model
 
 def get_pose_net_quarter(num_layers, heads, head_conv=256, down_ratio=4):

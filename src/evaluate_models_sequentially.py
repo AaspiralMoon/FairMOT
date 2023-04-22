@@ -40,14 +40,14 @@ def get_mota(xlsx_path):
 # df = pd.DataFrame(data, index=imgsz_list)
 # df.to_excel(osp.join(exp_path, 'mota_multires_{}_to_{}.xlsx'.format(start_point, end_point)), engine="openpyxl")
 
-exp_id = 'test_freeze_2_to_3'           # modify here
+exp_id = 'multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_800_15_to_15'           # modify here
 result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 exp_path = osp.join(result_root, exp_id)
 xlsx_path = osp.join(exp_path, 'summary_{}.xlsx'.format(exp_id))
-model_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/test_freeze'  # modify here
+model_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_800'  # modify here
 
-start_point = 2           # modify here
-end_point = 3
+start_point = 15           # modify here
+end_point = 15
 imgsz_list = [(1088, 608)]
 data = {}
 

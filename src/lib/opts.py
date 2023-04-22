@@ -101,9 +101,10 @@ class opts(object):
                                   'test on test set')
     self.parser.add_argument('--multi_res_train', default=False, 
                              help='allow multiresolution training')       # add multi-resolution training
-    self.parser.add_argument('--load_classifier_weights', default='', 
+    self.parser.add_argument('--load_classifier', default='', 
                              help='resume a training with the same classifier')       # add multi-resolution training
-    
+    self.parser.add_argument('--freeze', default=False, 
+                             help='separately training the hmknob head')       # separately training the hmknob head while freezing the other layers
     # test
     self.parser.add_argument('--K', type=int, default=500,
                              help='max number of output objects.') 

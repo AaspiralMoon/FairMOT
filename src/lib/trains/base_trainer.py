@@ -47,7 +47,8 @@ class BaseTrainer(object):
     model_with_loss = self.model_with_loss
     if phase == 'train':
       model_with_loss.train()
-      if self.opt.arch == 'freeze-full-dla_34':
+      if self.opt.freeze:
+        print('Freezing layers...')
         if len(self.opt.gpus) > 1:
           model_with_loss.module.model.freeze_except_multiknob_head()
         else:

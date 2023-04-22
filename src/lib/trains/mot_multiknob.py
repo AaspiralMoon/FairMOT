@@ -32,10 +32,10 @@ class MotLoss_MultiKnob(torch.nn.Module):
         self.emb_dim = opt.reid_dim
         self.nID = opt.nID
         self.classifier = nn.Linear(self.emb_dim, self.nID)
-        if opt.load_classifier_weights:
-            self.classifier = load_model(self.classifier, opt.load_classifier_weights)
-        if opt.arch == 'freeze-full-dla_34':
-            print('The classifier is frozen...')
+        if opt.load_classifier:
+            self.classifier = load_model(self.classifier, opt.load_classifier)
+        if opt.freeze:
+            print('Freezing the classifier...')
             for param in self.classifier.parameters():
                 param.requires_grad = False
         self.IDLoss = nn.CrossEntropyLoss(ignore_index=-1)
