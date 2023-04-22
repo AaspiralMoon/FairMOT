@@ -506,24 +506,53 @@ class DLASeg(nn.Module):
             z[head] = self.__getattr__(head)(y[-1])
         return [z]
 
+    # def freeze_except_multiknob_head(self):
+    #     # Freeze the backbone network
+    #     for param in self.base.parameters():
+    #         param.requires_grad = False
+
+    #     # Freeze the dla_up layer
+    #     for param in self.dla_up.parameters():
+    #         param.requires_grad = False
+
+    #     # Freeze the ida_up layer
+    #     for param in self.ida_up.parameters():
+    #         param.requires_grad = False
+
+    #     # Freeze all heads except the second head ('hmknob' in this case)
+    #     for head in self.heads:
+    #         if head != 'hmknob':
+    #             for param in self.__getattr__(head).parameters():
+    #                 param.requires_grad = False
+
     def freeze_except_multiknob_head(self):
-        # Freeze the backbone network
-        for param in self.base.parameters():
-            param.requires_grad = False
+        def freeze_parameters(parameters, freeze=True):
+            for param in parameters:
+                param.requires_grad = not freeze
 
-        # Freeze the dla_up layer
-        for param in self.dla_up.parameters():
-            param.requires_grad = False
+        def freeze_bn(layer):
+            for module in layer.modules():
+                if isinstance(module, nn.BatchNorm2d):
+                    module.eval()
 
-        # Freeze the ida_up layer
-        for param in self.ida_up.parameters():
-            param.requires_grad = False
+        # Freeze the backbone network and its BatchNorm layers
+        freeze_parameters(self.base.parameters())
+        freeze_bn(self.base)
+
+        # Freeze the dla_up layer and its BatchNorm layers
+        freeze_parameters(self.dla_up.parameters())
+        freeze_bn(self.dla_up)
+
+        # Freeze the ida_up layer and its BatchNorm layers
+        freeze_parameters(self.ida_up.parameters())
+        freeze_bn(self.ida_up)
 
         # Freeze all heads except the second head ('hmknob' in this case)
         for head in self.heads:
             if head != 'hmknob':
-                for param in self.__getattr__(head).parameters():
-                    param.requires_grad = False
+                freeze_parameters(self.__getattr__(head).parameters())
+            else:
+                freeze_parameters(self.__getattr__(head).parameters(), freeze=False)
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
     model = DLASeg('dla{}'.format(num_layers), heads,

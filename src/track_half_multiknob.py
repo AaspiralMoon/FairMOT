@@ -47,7 +47,7 @@ def compare_hms(hm, hm_knob):
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
     thresholds = []
-    thresholds_preset = [0.61, 0.65, 0.69, 0.62, 0.66, 0.71, 0.63, 0.68, 0.73, 0.64, 0.7, 0.74, 0.67, 0.72, 0.75]
+    thresholds_preset = [0.61, 0.64, 0.69, 0.62, 0.66, 0.71, 0.63, 0.68, 0.73, 0.65, 0.70, 0.74, 0.67, 0.72, 0.75]
     if threshold_config == 'C1':
         thresholds = thresholds_preset
     if threshold_config == 'C2':
@@ -62,9 +62,6 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [x + 5*0.05 for x in thresholds_preset]
     if threshold_config == 'C7':
         thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98]
-        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 0.98, 1, 1]  # 70.0 20.1
-        # thresholds = [0, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.1 20.4
-        # thresholds = [0, 0.98, 1, 0.98, 0.98, 1, 0.98, 1, 1, 0.98, 1, 1, 1, 1, 1] # 70.2 20.2
     if threshold_config == 'C8':
         thresholds = [99, 0, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98, 99, 0.98, 0.98]
     if threshold_config == 'C9':
@@ -73,7 +70,6 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [0, 0.98, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C11':
         thresholds = [0, 99, 0.95, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -135,7 +131,6 @@ def write_results(filename, results, data_type):
                 line = save_format.format(frame=frame_id, id=track_id, x1=x1, y1=y1, x2=x2, y2=y2, w=w, h=h)
                 f.write(line)
     logger.info('save results to {}'.format(filename))
-
 
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
