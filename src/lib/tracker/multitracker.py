@@ -190,10 +190,7 @@ class JDETracker(object):
 
         if opt.load_full_model:                      
             print('Creating full-dla_34 model...')
-            if opt.separate_models:
-                self.full_model = create_model('full-dla_34', heads_for_full_half_quarter, opt.head_conv)
-            else:
-                self.full_model = create_model('full-dla_34', opt.heads, opt.head_conv)
+            self.full_model = create_model('full-dla_34', heads_for_full_half_quarter, opt.head_conv)
             self.full_model = load_model(self.full_model, opt.load_full_model)
             self.full_model = self.full_model.to(opt.device)
             self.full_model.eval()

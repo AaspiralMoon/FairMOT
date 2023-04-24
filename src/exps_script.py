@@ -7,13 +7,13 @@ import time
 
 # track_half_multiknob with different sp and thresh
 sp_list = [40]
-# thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
-thresh_list = ['C7']
+thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13']
 for sp in sp_list:
     for thresh in thresh_list:
-        cmd_str = 'python track_half_multiknob.py --exp_id multiknob_separate_0.4_{}_{} \
+        cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
+                --exp_id multiknob_separate_0.4_{}_{} \
                 --task mot_multiknob \
-                --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_1.00_300/model_246.pth \
+                --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_800/model_687.pth \
                 --load_full_model ../models/full-dla_34.pth \
                 --load_half_model ../models/half-dla_34.pth \
                 --load_quarter_model ../models/quarter-dla_34.pth \

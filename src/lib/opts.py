@@ -144,7 +144,6 @@ class opts(object):
     self.parser.add_argument('--is_profiling', default=True, help='profile the latency')
     self.parser.add_argument('--threshold_config', type=str, default='C1', help='Different threshold settings for tracking')
     self.parser.add_argument('--qp', type=int, default=-1, help='run tracking on images at different QPs')
-    self.parser.add_argument('--separate_models', default=True, help='if separating full-multiknob and full models during tracking')
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,
