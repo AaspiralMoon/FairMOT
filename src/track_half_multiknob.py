@@ -46,33 +46,19 @@ def compare_hms(hm, hm_knob):
 
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
-    thresholds = []
-    thresholds_preset = [0.61, 0.64, 0.69, 0.62, 0.66, 0.71, 0.63, 0.68, 0.73, 0.65, 0.70, 0.74, 0.67, 0.72, 0.75]
     if threshold_config == 'C1':
-        thresholds = thresholds_preset
-    if threshold_config == 'C2':
-        thresholds = [x + 0.05 for x in thresholds_preset]
-    if threshold_config == 'C3':
-        thresholds = [x + 2*0.05 for x in thresholds_preset]
-    if threshold_config == 'C4':
-        thresholds = [x + 3*0.05 for x in thresholds_preset]
-    if threshold_config == 'C5':
-        thresholds = [x + 4*0.05 for x in thresholds_preset]
-    if threshold_config == 'C6':
-        thresholds = [x + 5*0.05 for x in thresholds_preset]
-    if threshold_config == 'C7':
         thresholds = [0, 99, 99, 0.85, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C8':
+    if threshold_config == 'C2':
         thresholds = [0, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C9':
+    if threshold_config == 'C3':
         thresholds = [0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C10':
+    if threshold_config == 'C4':
         thresholds = [0, 99, 99, 0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99]
-    if threshold_config == 'C11':
+    if threshold_config == 'C5':
         thresholds = [0, 99, 99, 0, 99, 99, 0, 99, 99, 0, 99, 99, 0.85, 99, 99]
-    if threshold_config == 'C12':
+    if threshold_config == 'C6':
         thresholds = [0, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
-    if threshold_config == 'C13':
+    if threshold_config == 'C7':
         thresholds = [0, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
 
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
