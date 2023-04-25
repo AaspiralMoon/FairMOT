@@ -141,9 +141,10 @@ def get_best_interval(results, interval_list, threshold=0.9):
     mota_interval = []
     for interval in interval_list:
         result_interval.append(subsample(results, interval))
-    for i in range(0, len(result_interval)):
+    for i in range(1, len(result_interval)):
         mota_interval.append(cal_mota(result_interval[0], result_interval[i]))
-    best_interval = interval_list[min([i for i, x in enumerate(mota_interval) if x >= threshold], default=0)]
+    print(mota_interval)
+    best_interval = interval_list[min([i for i, x in enumerate(mota_interval) if x >= threshold], default=-1) + 1]
     return best_interval
 
 def write_results(filename, results, data_type):
@@ -171,7 +172,7 @@ def write_results(filename, results, data_type):
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, interval=1):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-    interval_list = [1] # fr = 30, 15, 10, 5, 2
+    interval_list = [1, 2, 3, 6, 15] # fr = 30, 15, 10, 5, 2
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -229,7 +230,8 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         if frame_cnt == opt.segment:
             print('Selecting the best interval...')
             results_seg.append((frame_id + 1, online_tlwhs, online_ids))
-            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.9)
+            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.8)
+            print('The best interval is: ', best_interval)
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
