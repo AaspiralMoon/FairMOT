@@ -4,13 +4,58 @@ import copy
 import motmetrics as mm
 mm.lap.default_solver = 'lap'
 
-from tracking_utils.io import read_results, unzip_objs
+from tracking_utils.io import unzip_objs
 
+def read_results(data, data_type: str, is_gt=False, is_ignore=False):
+    if data_type in ('mot', 'lab'):
+        read_fun = read_mot_results
+    else:
+        raise ValueError('Unknown data type: {}'.format(data_type))
+
+    return read_fun(data, is_gt, is_ignore)
+
+def read_mot_results(data, is_gt, is_ignore):
+    valid_labels = {1}
+    ignore_labels = {2, 7, 8, 12}
+    results_dict = dict()
+
+    for line in data:
+        linelist = list(map(str, line))
+        if len(linelist) < 7:
+            continue
+        fid = int(linelist[0])
+        if fid < 1:
+            continue
+        results_dict.setdefault(fid, list())
+
+        box_size = float(linelist[4]) * float(linelist[5])
+
+        if is_gt:
+            label = int(float(linelist[7]))
+            mark = int(float(linelist[6]))
+            if mark == 0 or label not in valid_labels:
+                continue
+            score = 1
+        elif is_ignore:
+            label = int(float(linelist[7]))
+            vis_ratio = float(linelist[8])
+            if label not in ignore_labels and vis_ratio >= 0:
+                continue
+            score = 1
+        else:
+            score = float(linelist[6])
+
+        tlwh = tuple(map(float, linelist[2:6]))
+        target_id = int(linelist[1])
+
+        results_dict[fid].append((tlwh, target_id, score))
+
+    return results_dict
 
 class Evaluator(object):
 
-    def __init__(self, gt_filename, data_type):
-        self.gt_filename = gt_filename
+    def __init__(self, gt_data, data_type):
+        self.gt_data = gt_data
         self.data_type = data_type
 
         self.load_annotations()
@@ -19,8 +64,8 @@ class Evaluator(object):
     def load_annotations(self):
         assert self.data_type == 'mot'
 
-        self.gt_frame_dict = read_results(self.gt_filename, self.data_type, is_gt=True)
-        self.gt_ignore_frame_dict = read_results(self.gt_filename, self.data_type, is_ignore=True)
+        self.gt_frame_dict = read_results(self.gt_data, self.data_type, is_gt=True)
+        self.gt_ignore_frame_dict = read_results(self.gt_data, self.data_type, is_ignore=True)
 
     def reset_accumulator(self):
         self.acc = mm.MOTAccumulator(auto_id=True)
@@ -73,10 +118,10 @@ class Evaluator(object):
             events = None
         return events
 
-    def eval_file(self, filename):
+    def eval_file(self, data):
         self.reset_accumulator()
 
-        result_frame_dict = read_results(filename, self.data_type, is_gt=False)
+        result_frame_dict = read_results(data, self.data_type, is_gt=False)
         #frames = sorted(list(set(self.gt_frame_dict.keys()) | set(result_frame_dict.keys())))
         frames = sorted(list(set(result_frame_dict.keys())))
         for frame_id in frames:

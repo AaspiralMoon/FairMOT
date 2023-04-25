@@ -22,6 +22,7 @@ from tracking_utils import visualization as vis
 from tracking_utils.log import logger
 from tracking_utils.timer import Timer
 from tracking_utils.evaluation import Evaluator
+from tracking_utils.evaluation_multiknob import Evaluator as Evaluator_multiknob
 import datasets.dataset.jde as datasets
 from models.decode import _nms
 from tracking_utils.utils import mkdir_if_missing
@@ -104,7 +105,47 @@ def plot_config_distribution(result_root, count_config, seq=None):
         plt.savefig(osp.join(result_root, 'config_distribution_{}.png'.format(seq)), dpi=300, bbox_inches='tight')
     plt.close()
     plt.clf()
-            
+
+def convert_results(results):
+    converted_results = []
+    for frame_id, tlwhs, track_ids in results:
+        new_data = []
+        for tlwh, track_id in zip(tlwhs, track_ids):
+            if track_id < 0:
+                continue
+            x1, y1, w, h = tlwh
+            x2, y2 = x1 + w, y1 + h
+            new_entry = (frame_id + 1, track_id, x1, y1, x2, y2, 1, 1, 0)
+            new_data.append(new_entry)
+        converted_results.extend(new_data)
+    return converted_results
+
+def get_best_interval(results, interval_list, threshold=0.9):
+    def subsample(data, interval):
+        subsampled_data = []
+        for i, element in enumerate(data):
+            if i % interval == 0:
+                subsampled_data.append(element)
+            else:
+                subsampled_data.append(subsampled_data[-1])
+        return subsampled_data
+    def cal_mota(gt, data):
+        acc = []
+        evaluator = Evaluator_multiknob(gt, 'mot')
+        acc.append(evaluator.eval_file(data))
+        metrics = mm.metrics.motchallenge_metrics
+        summary = Evaluator_multiknob.get_summary(acc, ['data'], metrics)
+        mota = summary.iloc[0]['mota']
+        return mota
+    result_interval = []
+    mota_interval = []
+    for interval in interval_list:
+        result_interval.append(subsample(results, interval))
+    for i in range(0, len(result_interval)):
+        mota_interval.append(cal_mota(result_interval[0], result_interval[i]))
+    best_interval = interval_list[min([i for i, x in enumerate(mota_interval) if x >= threshold], default=0)]
+    return best_interval
+
 def write_results(filename, results, data_type):
     if data_type == 'mot':
         save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
@@ -127,9 +168,10 @@ def write_results(filename, results, data_type):
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, interval=1):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    interval_list = [1] # fr = 30, 15, 10, 5, 2
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -147,8 +189,14 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if (i % opt.switch_period == 0 or i == start_frame):
-            best_config_idx = 0
+        if i % opt.switch_period == 0 or i == start_frame:
+            best_config_idx = 0 # res and model
+            best_interval = 1   # frame rate
+            frame_cnt = 1       # count the frames in segments
+            results_seg = []
+        if i % best_interval != 0:
+            frame_id += 1
+            continue
         best_config = configs[best_config_idx]
         best_imgsz, best_model = best_config.split('+')
         dataloader.set_image_size(ast.literal_eval(best_imgsz))
@@ -157,15 +205,16 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
-        if (i % opt.switch_period == 0 or i == start_frame):
+        if i % opt.switch_period == 0 or i == start_frame:
             print('Running switching...')
             online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
             online_targets = tracker.update_hm(blob, img0, best_model)
+            frame_cnt += 1
 
-        print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i+1)))
+        print('Running imgsz: {} model: {} interval: {} on image: {}'.format(best_imgsz, best_model, best_interval, str(i+1)))
         online_tlwhs = []
         online_ids = []        
         #online_scores = []
@@ -177,9 +226,16 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
                 #online_scores.append(t.score)
+        if frame_cnt == opt.segment:
+            print('Selecting the best interval...')
+            results_seg.append((frame_id + 1, online_tlwhs, online_ids))
+            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.9)
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
+        if best_interval != 1:
+            for i in range(1, best_interval):
+                results.append((frame_id + 1 + i, online_tlwhs, online_ids))
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
