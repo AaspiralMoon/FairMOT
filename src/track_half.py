@@ -279,4 +279,4 @@ if __name__ == '__main__':
          show_image=False,
          save_images=False,
          save_videos=False,
-         interval=1)
+         interval=opt.interval)

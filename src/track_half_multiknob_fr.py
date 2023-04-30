@@ -51,12 +51,14 @@ def compare_hms(hm, hm_knob):
 
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
     config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
+    if threshold_config == 'C0':
+        thresholds = [0, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C1':
         thresholds = [0, 99, 99, 0.85, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C2':
         thresholds = [0, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C3':
-        thresholds = [0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99, 99, 99, 99]
+        thresholds = [0, 99, 99, 0, 99, 99, 0.90, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C4':
         thresholds = [0, 99, 99, 0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99]
     if threshold_config == 'C5':
@@ -172,7 +174,7 @@ def write_results(filename, results, data_type):
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, interval=1):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-    interval_list = [1, 2, 3, 6, 15] # fr = 30, 15, 10, 5, 2
+    interval_list = [1, 2, 3, 6] # fr = 30, 15, 10, 5
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -230,7 +232,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         if frame_cnt == opt.segment:
             print('Selecting the best interval...')
             results_seg.append((frame_id + 1, online_tlwhs, online_ids))
-            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.8)
+            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.9)
             print('The best interval is: ', best_interval)
         timer.toc()
         # save results

@@ -51,7 +51,7 @@ def update_config(det_rate_list, threshold_config):                      # the t
     if threshold_config == 'C2':
         thresholds = [0, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C3':
-        thresholds = [0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99, 99, 99, 99]
+        thresholds = [0, 99, 99, 0, 99, 99, 0.90, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C4':
         thresholds = [0, 99, 99, 0, 99, 99, 0, 99, 99, 0.85, 99, 99, 99, 99, 99]
     if threshold_config == 'C5':
@@ -60,6 +60,14 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [0, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C7':
         thresholds = [0, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C8':
+        thresholds = [0, 0.99, 99, 0, 99, 99, 0.90, 99, 99, 0.99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C9':
+        thresholds = [0, 99, 99, 0, 0.99, 99, 0, 99, 99, 0.85, 99, 99, 0.99, 99, 99]
+    if threshold_config == 'C10':
+        thresholds = [0, 99, 99, 0, 0.99, 0.99, 0, 0.99, 0.99, 0, 99, 99, 0.85, 99, 99]
+    if threshold_config == 'C11':
+        thresholds = [0, 99, 99, 0, 99, 0.99, 0, 0.99, 0.99, 0, 0.99, 0.99, 0, 0.99, 0.99]
 
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
@@ -310,7 +318,8 @@ if __name__ == '__main__':
                       MOT17-05-SDP
                       MOT17-09-SDP
                       MOT17-10-SDP
-                      MOT17-11-SDP'''
+                      MOT17-11-SDP
+                      MOT17-13-SDP'''
         # seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:
