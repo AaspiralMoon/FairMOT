@@ -44,6 +44,7 @@ def read_mot_results(data, is_gt, is_ignore):
             score = 1
         else:
             score = float(linelist[6])
+        
 
         tlwh = tuple(map(float, linelist[2:6]))
         target_id = int(linelist[1])

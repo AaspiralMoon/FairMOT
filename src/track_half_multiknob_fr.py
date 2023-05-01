@@ -237,9 +237,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        if best_interval != 1:
-            for i in range(1, best_interval):
-                results.append((frame_id + 1 + i, online_tlwhs, online_ids))
+        # if best_interval != 1:
+        #     for i in range(1, best_interval):
+        #         results.append((frame_id + 1 + i, online_tlwhs, online_ids))
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
@@ -374,7 +374,8 @@ if __name__ == '__main__':
                       MOT17-05-SDP
                       MOT17-09-SDP
                       MOT17-10-SDP
-                      MOT17-11-SDP'''
+                      MOT17-11-SDP
+                      MOT17-13-SDP'''
         # seqs_str = '''MOT17-02-SDP'''
         data_root = os.path.join(opt.data_dir, 'MOT17/images/train')
     if opt.val_mot15:

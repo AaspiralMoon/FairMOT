@@ -96,9 +96,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        if interval != 1:
-            for i in range(1, interval):
-                results.append((frame_id + 1 + i, online_tlwhs, online_ids))
+        # if interval != 1:
+        #     for i in range(1, interval):
+        #         results.append((frame_id + 1 + i, online_tlwhs, online_ids))
 
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:

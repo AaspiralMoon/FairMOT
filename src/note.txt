@@ -10,12 +10,11 @@ track_half_multiknob:
     lib/datasets/dataset/jde - LoadImages - set_image_size
 
 
-multi-res training reverse  ×
-multi-res trianing progressive ×
-multi-res trianing progressive reverse ×
-multi-res training weighted 
-multi-res training weighted reverse ×
-multi-res training finetune after full-res training (without smaller lr)
-multi-res training finetune after full-res training (with smaller lr)
-multi-res training finetune after multi-res training (with smaller lr)
-multi-res training finetune after multi-res training (with smaller lr)
+# check track_fr code
+1. fill/not fill blank
+not fill 69.6, fill 68.2
+2. check skip
+3. check gt, ignore
+4. check i, frame_id
+
+# plot durve for different seq
