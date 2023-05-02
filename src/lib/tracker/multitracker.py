@@ -615,7 +615,7 @@ class JDETracker(object):
         if model_id == 'full-dla_34-multiknob':
             return output_stracks, hm, hm_knob
         else:
-            return output_stracks, dets, id_feature, 
+            return output_stracks, dets, id_feature
 
 
 def joint_stracks(tlista, tlistb):

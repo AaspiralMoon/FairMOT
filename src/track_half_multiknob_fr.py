@@ -148,14 +148,16 @@ def write_results(filename, results, data_type):
                 f.write(line)
     logger.info('save results to {}'.format(filename))
     
-def object_association(seg_start_frame_id, dets_list, id_feature_list, 
-                       history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
-                       tracker_frame_id, max_time_lost, kalman_filter, interval=1):
+def object_association(seg_start_frame_id, dets_list, id_feature_list, max_time_lost, interval=1):
+    history_tracked_stracks = []
+    history_lost_stracks = []
+    history_removed_stracks = []
+    frame_id = 0
+    kalman_filter = KalmanFilter()
     results_seg = []
     for i, (dets, id_feature) in enumerate(zip(dets_list, id_feature_list)):        
         if i % interval != 0:
             continue
-        frame_id = tracker_frame_id
         frame_id += 1
         activated_starcks = []
         refind_stracks = []
@@ -270,12 +272,12 @@ def object_association(seg_start_frame_id, dets_list, id_feature_list,
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
         results_seg.append((seg_start_frame_id + i, online_tlwhs, online_ids))
-
+        if interval != 1:
+            for j in range(1, interval):
+                results_seg.append((seg_start_frame_id + i + j, online_tlwhs, online_ids))
     return convert_results(results_seg)
 
-def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, id_feature_list, 
-                      history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
-                      tracker_frame_id, max_time_lost, kalman_filter, threshold=0.9):
+def get_best_interval(seg_start_frame_id, interval_list, dets_list, id_feature_list, max_time_lost, threshold=0.9):
     def cal_mota(gt, data):
         acc = []
         evaluator = Evaluator_multiknob(gt, 'mot')
@@ -286,12 +288,9 @@ def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, 
         return mota
     
     best_interval_candidates = []
-    for interval in interval_list[2:]:
-        results_seg = object_association(seg_start_frame_id, dets_list, id_feature_list, 
-                                            history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
-                                            tracker_frame_id, max_time_lost, kalman_filter, interval)
-        # print('gt: \n', results_gt)
-        # print('results: \n', results_seg)
+    results_gt = object_association(seg_start_frame_id, dets_list, id_feature_list, max_time_lost, interval_list[0])
+    for interval in interval_list[1:]:
+        results_seg = object_association(seg_start_frame_id, dets_list, id_feature_list, max_time_lost, interval)
         mota = cal_mota(results_gt, results_seg)
         print('{}: '.format(interval), mota)
         if mota > threshold:
@@ -324,7 +323,6 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             best_config_idx = 0 # res and model
             best_interval = 1   # frame rate
             frame_cnt = 1       # count the frames in segments
-            results_seg = []
             dets_list = []
             id_feature_list = []
         if (i - start_frame) % best_interval != 0:
@@ -343,20 +341,12 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
-            history_tracked_stracks = copy.deepcopy(tracker.tracked_stracks)
-            history_lost_stracks = copy.deepcopy(tracker.lost_stracks)
-            history_removed_stracks = copy.deepcopy(tracker.removed_stracks)
-            tracker_frame_id = copy.deepcopy(tracker.frame_id)
-            max_time_lost = copy.deepcopy(tracker.max_time_lost)
-            kalman_filter = copy.deepcopy(tracker.kalman_filter)
             seg_start_frame_id = copy.deepcopy(frame_id + 2)
         else:
             online_targets, dets, id_feature, = tracker.update_hm(blob, img0, best_model)
             dets_list.append(dets)
             id_feature_list.append(id_feature)
-            results_seg.append((frame_id + 1, online_tlwhs, online_ids))
             frame_cnt += 1
-            print(seg_start_frame_id)
 
         print('Running imgsz: {} model: {} interval: {} on image: {}'.format(best_imgsz, best_model, best_interval, str(frame_id + 1)))
         online_tlwhs = []
@@ -371,14 +361,14 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 
         if frame_cnt == opt.segment:
             print('Selecting the best interval...')
-            best_interval = get_best_interval(convert_results(results_seg), seg_start_frame_id, interval_list, dets_list, id_feature_list, 
-                                              history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
-                                              tracker_frame_id, max_time_lost, kalman_filter, threshold=0.9)
-            best_interval = 1
+            best_interval = get_best_interval(seg_start_frame_id, interval_list, dets_list, id_feature_list, max_time_lost=int(frame_rate / 30.0 * opt.track_buffer), threshold=0.9)
             print('The best interval is: ', best_interval)
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
+        if best_interval != 1:
+            for j in range(1, best_interval):
+                results.append((frame_id + 1 + j, online_tlwhs, online_ids))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)

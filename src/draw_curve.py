@@ -11,8 +11,8 @@ half_mota = np.array([65.5, 62.6, 56.6, 53.9, 51.3])            # MOTA
 quarter_fps = np.array([28.7, 33.3, 36.0, 36.8, 37.6])               # FPS
 quarter_mota = np.array([60.2, 58.2, 54.5, 52.2, 47.8])            # MOTA
 
-DC_fps = np.array([21.3, 18.6, 23.6, 28.9, 31.3, 18.0, 17.6])               # FPS
-DC_mota = np.array([69.6, 70.5, 69.5, 67.2, 65.4, 70.2, 70.6])          # MOTA
+DC_fps = np.array([21.4, 18.2, 23.5, 28.4, 30.6, 18.3, 17.4, 24.6, 28.4, 30.9, 32.8])               # FPS
+DC_mota = np.array([69.6, 70.8, 69.6, 67.1, 65.5, 70.3, 70.6, 69.4, 67.0, 65.2, 61.9])          # MOTA
 
 # DC_fps_classifier = np.array([32.7, 30.8, 31.0, 28.7, 26.6, 23.8])               # FPS
 # DC_mota_classifier = np.array([58.3, 59.2, 60.0, 62.4, 63.9, 65.9])          # MOTA
@@ -32,7 +32,7 @@ for i, txt in enumerate(resolutions):
     plt.annotate(txt, (half_fps[i], half_mota[i]))
     plt.annotate(txt, (quarter_fps[i], quarter_mota[i]))
 
-thresh_settings = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7']
+thresh_settings = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
 for i, txt in enumerate(thresh_settings):
     plt.annotate(txt, (DC_fps[i], DC_mota[i]))
 

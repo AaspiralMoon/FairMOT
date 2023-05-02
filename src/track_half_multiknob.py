@@ -151,7 +151,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if (i % opt.switch_period == 0 or i == start_frame):
+        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
             best_config_idx = 0
         best_config = configs[best_config_idx]
         best_imgsz, best_model = best_config.split('+')
@@ -161,7 +161,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
-        if (i % opt.switch_period == 0 or i == start_frame):
+        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
             print('Running switching...')
             online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
@@ -259,9 +259,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    torch.cuda.set_device(0)
     opt = opts().init()
-
     if not opt.val_mot16:
         seqs_str = '''KITTI-13
                       KITTI-17

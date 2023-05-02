@@ -15,32 +15,32 @@ def get_mota(xlsx_path):
 # track_half_multiknob with different sp and thresh
 # sp_list = [40, 20, 10, 2]
 sp_list = [40]
-# thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
-thresh_list = ['C0']
-# for sp in sp_list:
-#     for thresh in thresh_list:
-#         cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
-#                 --exp_id multiknob_0.4_{}_{} \
-#                 --task mot_multiknob \
-#                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
-#                 --load_full_model ../models/full-dla_34.pth \
-#                 --load_half_model ../models/half-dla_34.pth \
-#                 --load_quarter_model ../models/quarter-dla_34.pth \
-#                 --switch_period {} --threshold_config {}'.format(sp, thresh, sp, thresh)
-#         os.system(cmd_str)
-
+thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
+# thresh_list = ['C2']
 for sp in sp_list:
     for thresh in thresh_list:
-        cmd_str = 'CUDA_VISIBLE_DEVICES=2 python track_half_multiknob_fr.py \
-                --exp_id test2 \
+        cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
+                --exp_id multiknob_0.4_{}_{} \
                 --task mot_multiknob \
                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
                 --load_full_model ../models/full-dla_34.pth \
                 --load_half_model ../models/half-dla_34.pth \
                 --load_quarter_model ../models/quarter-dla_34.pth \
-                --segment 20 \
-                --switch_period {} --threshold_config {}'.format(sp, thresh)
+                --switch_period {} --threshold_config {}'.format(sp, thresh, sp, thresh)
         os.system(cmd_str)
+
+# for sp in sp_list:
+#     for thresh in thresh_list:
+#         cmd_str = 'CUDA_VISIBLE_DEVICES=2 python track_half_multiknob_fr.py \
+#                 --exp_id test2 \
+#                 --task mot_multiknob \
+#                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
+#                 --load_full_model ../models/full-dla_34.pth \
+#                 --load_half_model ../models/half-dla_34.pth \
+#                 --load_quarter_model ../models/quarter-dla_34.pth \
+#                 --segment 20 \
+#                 --switch_period {} --threshold_config {}'.format(sp, thresh)
+#         os.system(cmd_str)
 
 # track_half with different model and imgsz
 imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
