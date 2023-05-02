@@ -41,7 +41,7 @@ class STrack(BaseTrack):
         self.update_features(temp_feat)
         self.features = deque([], maxlen=buffer_size)
         self.alpha = 0.9
-
+    
     def update_features(self, feat):
         feat /= np.linalg.norm(feat)
         self.curr_feat = feat

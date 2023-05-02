@@ -112,6 +112,42 @@ def plot_config_distribution(result_root, count_config, seq=None):
     plt.close()
     plt.clf()
 
+def convert_results(results):
+    converted_results = []
+    for frame_id, tlwhs, track_ids in results:
+        new_data = []
+        for tlwh, track_id in zip(tlwhs, track_ids):
+            if track_id < 0:
+                continue
+            x1, y1, w, h = tlwh
+            x2, y2 = x1 + w, y1 + h
+            new_entry = (frame_id, track_id, x1, y1, x2, y2, 1, 1, 0)
+            new_data.append(new_entry)
+        converted_results.extend(new_data)
+    return converted_results
+
+def write_results(filename, results, data_type):
+    if data_type == 'mot':
+        save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
+        # save_format = '{frame},{id},{x1},{y1},{w},{h},1,1,0\n'
+    elif data_type == 'kitti':
+        save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+    else:
+        raise ValueError(data_type)
+
+    with open(filename, 'w') as f:
+        for frame_id, tlwhs, track_ids in results:
+            if data_type == 'kitti':
+                frame_id -= 1
+            for tlwh, track_id in zip(tlwhs, track_ids):
+                if track_id < 0:
+                    continue
+                x1, y1, w, h = tlwh
+                x2, y2 = x1 + w, y1 + h
+                line = save_format.format(frame=frame_id, id=track_id, x1=x1, y1=y1, x2=x2, y2=y2, w=w, h=h)
+                f.write(line)
+    logger.info('save results to {}'.format(filename))
+    
 def object_association(seg_start_frame_id, dets_list, id_feature_list, 
                        history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
                        tracker_frame_id, max_time_lost, kalman_filter, interval=1):
@@ -234,23 +270,8 @@ def object_association(seg_start_frame_id, dets_list, id_feature_list,
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
         results_seg.append((seg_start_frame_id + i, online_tlwhs, online_ids))
-        # print('converted results_seg: ', convert_results(results_seg))
+
     return convert_results(results_seg)
-
-
-def convert_results(results):
-    converted_results = []
-    for frame_id, tlwhs, track_ids in results:
-        new_data = []
-        for tlwh, track_id in zip(tlwhs, track_ids):
-            if track_id < 0:
-                continue
-            x1, y1, w, h = tlwh
-            x2, y2 = x1 + w, y1 + h
-            new_entry = (frame_id, track_id, x1, y1, x2, y2, 1, 1, 0)
-            new_data.append(new_entry)
-        converted_results.extend(new_data)
-    return converted_results
 
 def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, id_feature_list, 
                       history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
@@ -265,12 +286,12 @@ def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, 
         return mota
     
     best_interval_candidates = []
-    for interval in interval_list:
+    for interval in interval_list[2:]:
         results_seg = object_association(seg_start_frame_id, dets_list, id_feature_list, 
                                             history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
                                             tracker_frame_id, max_time_lost, kalman_filter, interval)
         # print('gt: \n', results_gt)
-        # print('results: \n', results)
+        # print('results: \n', results_seg)
         mota = cal_mota(results_gt, results_seg)
         print('{}: '.format(interval), mota)
         if mota > threshold:
@@ -278,32 +299,10 @@ def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, 
     best_interval = max(best_interval_candidates, default=1)
     return best_interval
 
-def write_results(filename, results, data_type):
-    if data_type == 'mot':
-        save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
-        # save_format = '{frame},{id},{x1},{y1},{w},{h},1,1,0\n'
-    elif data_type == 'kitti':
-        save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
-    else:
-        raise ValueError(data_type)
-
-    with open(filename, 'w') as f:
-        for frame_id, tlwhs, track_ids in results:
-            if data_type == 'kitti':
-                frame_id -= 1
-            for tlwh, track_id in zip(tlwhs, track_ids):
-                if track_id < 0:
-                    continue
-                x1, y1, w, h = tlwh
-                x2, y2 = x1 + w, y1 + h
-                line = save_format.format(frame=frame_id, id=track_id, x1=x1, y1=y1, x2=x2, y2=y2, w=w, h=h)
-                f.write(line)
-    logger.info('save results to {}'.format(filename))
-
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-    interval_list = [1] # fr = 30, 15, 10, 5
+    interval_list = [1, 2, 3, 6] # fr = 30, 15, 10, 5
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -321,14 +320,14 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if i % opt.switch_period == 0 or i == start_frame:
+        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
             best_config_idx = 0 # res and model
             best_interval = 1   # frame rate
             frame_cnt = 1       # count the frames in segments
             results_seg = []
             dets_list = []
             id_feature_list = []
-        if i % best_interval != 0:
+        if (i - start_frame) % best_interval != 0:
             frame_id += 1
             continue
         best_config = configs[best_config_idx]
@@ -339,19 +338,27 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
-        if i % opt.switch_period == 0 or i == start_frame:
+        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
             print('Running switching...')
             online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
+            history_tracked_stracks = copy.deepcopy(tracker.tracked_stracks)
+            history_lost_stracks = copy.deepcopy(tracker.lost_stracks)
+            history_removed_stracks = copy.deepcopy(tracker.removed_stracks)
+            tracker_frame_id = copy.deepcopy(tracker.frame_id)
+            max_time_lost = copy.deepcopy(tracker.max_time_lost)
+            kalman_filter = copy.deepcopy(tracker.kalman_filter)
+            seg_start_frame_id = copy.deepcopy(frame_id + 2)
         else:
             online_targets, dets, id_feature, = tracker.update_hm(blob, img0, best_model)
             dets_list.append(dets)
             id_feature_list.append(id_feature)
             results_seg.append((frame_id + 1, online_tlwhs, online_ids))
             frame_cnt += 1
+            print(seg_start_frame_id)
 
-        print('Running imgsz: {} model: {} interval: {} on image: {}'.format(best_imgsz, best_model, best_interval, str(i+1)))
+        print('Running imgsz: {} model: {} interval: {} on image: {}'.format(best_imgsz, best_model, best_interval, str(frame_id + 1)))
         online_tlwhs = []
         online_ids = []        
         for t in online_targets:
@@ -364,17 +371,9 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 
         if frame_cnt == opt.segment:
             print('Selecting the best interval...')
-            history_tracked_stracks = copy.deepcopy(tracker.tracked_stracks)
-            history_lost_stracks = copy.deepcopy(tracker.lost_stracks)
-            history_removed_stracks = copy.deepcopy(tracker.removed_stracks)
-            tracker_frame_id = copy.deepcopy(tracker.frame_id)
-            max_time_lost = copy.deepcopy(tracker.max_time_lost)
-            kalman_filter = copy.deepcopy(tracker.kalman_filter)
-            print('before:', online_ids)
-            best_interval = get_best_interval(convert_results(results_seg), frame_id + 3 - opt.segment, interval_list, dets_list, id_feature_list, 
+            best_interval = get_best_interval(convert_results(results_seg), seg_start_frame_id, interval_list, dets_list, id_feature_list, 
                                               history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
                                               tracker_frame_id, max_time_lost, kalman_filter, threshold=0.9)
-            print('after:', online_ids)
             best_interval = 1
             print('The best interval is: ', best_interval)
         timer.toc()
