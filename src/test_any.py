@@ -129,3 +129,8 @@
 
 # # Save the plot as an image
 # plt.savefig('pareto_front.png', dpi=300)
+
+data = [1,2,3]
+gt = []
+gt.append(data)
+print(gt[0])

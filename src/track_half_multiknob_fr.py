@@ -16,8 +16,12 @@ import motmetrics as mm
 import numpy as np
 import torch
 import ast
+import copy
 import matplotlib.pyplot as plt
-from tracker.multitracker import JDETracker
+from tracker.multitracker import JDETracker, STrack, joint_stracks, sub_stracks, remove_duplicate_stracks
+from tracker import matching
+from tracking_utils.kalman_filter import KalmanFilter
+from tracker.basetrack import TrackState
 from tracking_utils import visualization as vis
 from tracking_utils.log import logger
 from tracking_utils.timer import Timer
@@ -108,6 +112,132 @@ def plot_config_distribution(result_root, count_config, seq=None):
     plt.close()
     plt.clf()
 
+def object_association(seg_start_frame_id, dets_list, id_feature_list, 
+                       history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
+                       tracker_frame_id, max_time_lost, kalman_filter, interval=1):
+    results_seg = []
+    for i, (dets, id_feature) in enumerate(zip(dets_list, id_feature_list)):        
+        if i % interval != 0:
+            continue
+        frame_id = tracker_frame_id
+        frame_id += 1
+        activated_starcks = []
+        refind_stracks = []
+        lost_stracks = []
+        removed_stracks = []
+
+        if len(dets) > 0:
+            '''Detections'''
+            detections = [STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30) for
+                            (tlbrs, f) in zip(dets[:, :5], id_feature)]
+        else:
+            detections = []
+
+        ''' Add newly detected tracklets to tracked_stracks'''
+        unconfirmed = []
+        tracked_stracks = []  # type: list[STrack]
+        for track in history_tracked_stracks:
+            if not track.is_activated:
+                unconfirmed.append(track)
+            else:
+                tracked_stracks.append(track)
+
+        ''' Step 2: First association, with embedding'''
+        strack_pool = joint_stracks(tracked_stracks, history_lost_stracks)
+        # Predict the current location with KF
+        #for strack in strack_pool:
+            #strack.predict()
+        STrack.multi_predict(strack_pool)
+        dists = matching.embedding_distance(strack_pool, detections)
+        #dists = matching.iou_distance(strack_pool, detections)
+        dists = matching.fuse_motion(kalman_filter, dists, strack_pool, detections)
+        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.4)
+
+        for itracked, idet in matches:
+            track = strack_pool[itracked]
+            det = detections[idet]
+            if track.state == TrackState.Tracked:
+                track.update(detections[idet], frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        ''' Step 3: Second association, with IOU'''
+        detections = [detections[i] for i in u_detection]
+        r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
+        dists = matching.iou_distance(r_tracked_stracks, detections)
+        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.5)
+
+        for itracked, idet in matches:
+            track = r_tracked_stracks[itracked]
+            det = detections[idet]
+            if track.state == TrackState.Tracked:
+                track.update(det, frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        for it in u_track:
+            track = r_tracked_stracks[it]
+            if not track.state == TrackState.Lost:
+                track.mark_lost()
+                lost_stracks.append(track)
+
+        '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
+        detections = [detections[i] for i in u_detection]
+        dists = matching.iou_distance(unconfirmed, detections)
+        matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
+        for itracked, idet in matches:
+            unconfirmed[itracked].update(detections[idet], frame_id)
+            activated_starcks.append(unconfirmed[itracked])
+        for it in u_unconfirmed:
+            track = unconfirmed[it]
+            track.mark_removed()
+            removed_stracks.append(track)
+
+        """ Step 4: Init new stracks"""
+        for inew in u_detection:
+            track = detections[inew]
+            if track.score < opt.conf_thres:
+                continue
+            track.activate(kalman_filter, frame_id)
+            activated_starcks.append(track)
+        """ Step 5: Update state"""
+        
+        for track in history_lost_stracks:
+            if frame_id - track.end_frame > max_time_lost:
+                track.mark_removed()
+                removed_stracks.append(track)
+
+        # print('Ramained match {} s'.format(t4-t3))
+
+        history_tracked_stracks = [t for t in history_tracked_stracks if t.state == TrackState.Tracked]
+        history_tracked_stracks = joint_stracks(history_tracked_stracks, activated_starcks)
+        history_tracked_stracks = joint_stracks(history_tracked_stracks, refind_stracks)
+        history_lost_stracks = sub_stracks(history_lost_stracks, history_tracked_stracks)
+        history_lost_stracks.extend(lost_stracks)
+        history_lost_stracks = sub_stracks(history_lost_stracks, history_removed_stracks)
+        history_removed_stracks.extend(removed_stracks)
+        history_tracked_stracks, history_lost_stracks = remove_duplicate_stracks(history_tracked_stracks, history_lost_stracks)
+        # get scores of lost tracks
+        output_stracks = [track for track in history_tracked_stracks if track.is_activated]
+        
+        online_tlwhs = []
+        online_ids = []        
+        for t in output_stracks:
+            tlwh = t.tlwh
+            tid = t.track_id
+            vertical = tlwh[2] / tlwh[3] > 1.6
+            if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
+                online_tlwhs.append(tlwh)
+                online_ids.append(tid)
+        results_seg.append((seg_start_frame_id + i, online_tlwhs, online_ids))
+        # print('converted results_seg: ', convert_results(results_seg))
+    return convert_results(results_seg)
+
+
 def convert_results(results):
     converted_results = []
     for frame_id, tlwhs, track_ids in results:
@@ -117,20 +247,14 @@ def convert_results(results):
                 continue
             x1, y1, w, h = tlwh
             x2, y2 = x1 + w, y1 + h
-            new_entry = (frame_id + 1, track_id, x1, y1, x2, y2, 1, 1, 0)
+            new_entry = (frame_id, track_id, x1, y1, x2, y2, 1, 1, 0)
             new_data.append(new_entry)
         converted_results.extend(new_data)
     return converted_results
 
-def get_best_interval(results, interval_list, threshold=0.9):
-    def subsample(data, interval):
-        subsampled_data = []
-        for i, element in enumerate(data):
-            if i % interval == 0:
-                subsampled_data.append(element)
-            else:
-                subsampled_data.append(subsampled_data[-1])
-        return subsampled_data
+def get_best_interval(results_gt, seg_start_frame_id, interval_list, dets_list, id_feature_list, 
+                      history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
+                      tracker_frame_id, max_time_lost, kalman_filter, threshold=0.9):
     def cal_mota(gt, data):
         acc = []
         evaluator = Evaluator_multiknob(gt, 'mot')
@@ -139,14 +263,19 @@ def get_best_interval(results, interval_list, threshold=0.9):
         summary = Evaluator_multiknob.get_summary(acc, ['data'], metrics)
         mota = summary.iloc[0]['mota']
         return mota
-    result_interval = []
-    mota_interval = []
+    
+    best_interval_candidates = []
     for interval in interval_list:
-        result_interval.append(subsample(results, interval))
-    for i in range(1, len(result_interval)):
-        mota_interval.append(cal_mota(result_interval[0], result_interval[i]))
-    print(mota_interval)
-    best_interval = interval_list[min([i for i, x in enumerate(mota_interval) if x >= threshold], default=-1) + 1]
+        results_seg = object_association(seg_start_frame_id, dets_list, id_feature_list, 
+                                            history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
+                                            tracker_frame_id, max_time_lost, kalman_filter, interval)
+        # print('gt: \n', results_gt)
+        # print('results: \n', results)
+        mota = cal_mota(results_gt, results_seg)
+        print('{}: '.format(interval), mota)
+        if mota > threshold:
+            best_interval_candidates.append(interval)
+    best_interval = max(best_interval_candidates, default=1)
     return best_interval
 
 def write_results(filename, results, data_type):
@@ -171,10 +300,10 @@ def write_results(filename, results, data_type):
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, interval=1):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-    interval_list = [1, 2, 3, 6] # fr = 30, 15, 10, 5
+    interval_list = [1] # fr = 30, 15, 10, 5
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -197,6 +326,8 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             best_interval = 1   # frame rate
             frame_cnt = 1       # count the frames in segments
             results_seg = []
+            dets_list = []
+            id_feature_list = []
         if i % best_interval != 0:
             frame_id += 1
             continue
@@ -214,13 +345,15 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
-            online_targets = tracker.update_hm(blob, img0, best_model)
+            online_targets, dets, id_feature, = tracker.update_hm(blob, img0, best_model)
+            dets_list.append(dets)
+            id_feature_list.append(id_feature)
+            results_seg.append((frame_id + 1, online_tlwhs, online_ids))
             frame_cnt += 1
 
         print('Running imgsz: {} model: {} interval: {} on image: {}'.format(best_imgsz, best_model, best_interval, str(i+1)))
         online_tlwhs = []
         online_ids = []        
-        #online_scores = []
         for t in online_targets:
             tlwh = t.tlwh
             tid = t.track_id
@@ -228,19 +361,25 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
-                #online_scores.append(t.score)
+
         if frame_cnt == opt.segment:
             print('Selecting the best interval...')
-            results_seg.append((frame_id + 1, online_tlwhs, online_ids))
-            best_interval = get_best_interval(convert_results(results_seg), interval_list, threshold=0.9)
+            history_tracked_stracks = copy.deepcopy(tracker.tracked_stracks)
+            history_lost_stracks = copy.deepcopy(tracker.lost_stracks)
+            history_removed_stracks = copy.deepcopy(tracker.removed_stracks)
+            tracker_frame_id = copy.deepcopy(tracker.frame_id)
+            max_time_lost = copy.deepcopy(tracker.max_time_lost)
+            kalman_filter = copy.deepcopy(tracker.kalman_filter)
+            print('before:', online_ids)
+            best_interval = get_best_interval(convert_results(results_seg), frame_id + 3 - opt.segment, interval_list, dets_list, id_feature_list, 
+                                              history_tracked_stracks, history_lost_stracks, history_removed_stracks, 
+                                              tracker_frame_id, max_time_lost, kalman_filter, threshold=0.9)
+            print('after:', online_ids)
+            best_interval = 1
             print('The best interval is: ', best_interval)
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        # if best_interval != 1:
-        #     for i in range(1, best_interval):
-        #         results.append((frame_id + 1 + i, online_tlwhs, online_ids))
-        #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time)

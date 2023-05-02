@@ -11,10 +11,15 @@ track_half_multiknob:
 
 
 # check track_fr code
-1. fill/not fill blank
-not fill 69.6, fill 68.2
-2. check skip
-3. check gt, ignore
-4. check i, frame_id
+1. original, blanked, skipped, filled (fr=15)
+original: 70.9, fr=full
+blanked: 69.6, do not fill the blank slots
+skipped: 70.5, skip results based on original
+filled: 68.2, fill the blank slots with the previous results.
+
+2. check gt, ignore
+should always use 1,1,0 for gt and results
+
+3. check i, frame_id
 
 # plot durve for different seq

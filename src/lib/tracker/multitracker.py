@@ -612,11 +612,10 @@ class JDETracker(object):
         logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
         logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
-        
         if model_id == 'full-dla_34-multiknob':
             return output_stracks, hm, hm_knob
         else:
-            return output_stracks
+            return output_stracks, dets, id_feature, 
 
 
 def joint_stracks(tlista, tlistb):
