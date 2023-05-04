@@ -71,6 +71,14 @@ def update_config(det_rate_list, threshold_config):                      # the t
         thresholds = [0, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C7':
         thresholds = [0, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C8':
+        thresholds = [0, 0.99, 99, 0, 99, 99, 0.90, 99, 99, 0.99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C9':
+        thresholds = [0, 99, 99, 0, 0.99, 99, 0, 99, 99, 0.85, 99, 99, 0.99, 99, 99]
+    if threshold_config == 'C10':
+        thresholds = [0, 99, 99, 0, 0.99, 0.99, 0, 0.99, 0.99, 0, 99, 99, 0.85, 99, 99]
+    if threshold_config == 'C11':
+        thresholds = [0, 99, 99, 0, 99, 0.99, 0, 0.99, 0.99, 0, 0.99, 0.99, 0, 0.99, 0.99]
 
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate > thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
@@ -316,6 +324,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     start_frame = int(len_all / 2)
     frame_id = int(len_all / 2)
     best_config_idx = 0
+    dropped_frames = 0
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
@@ -327,6 +336,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             id_feature_list = []
         if (i - start_frame) % best_interval != 0:
             frame_id += 1
+            dropped_frames += 1
             continue
         best_config = configs[best_config_idx]
         best_imgsz, best_model = best_config.split('+')
@@ -359,10 +369,10 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
 
-        if frame_cnt == opt.segment:
-            print('Selecting the best interval...')
-            best_interval = get_best_interval(seg_start_frame_id, interval_list, dets_list, id_feature_list, max_time_lost=int(frame_rate / 30.0 * opt.track_buffer), threshold=0.9)
-            print('The best interval is: ', best_interval)
+        # if frame_cnt == opt.segment:
+        #     print('Selecting the best interval...')
+        #     best_interval = get_best_interval(seg_start_frame_id, interval_list, dets_list, id_feature_list, max_time_lost=int(frame_rate / 30.0 * opt.track_buffer), threshold=0.9)
+        #     print('The best interval is: ', best_interval)
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
@@ -380,7 +390,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     # save results
     write_results(result_filename, results, data_type)
     #write_results_score(result_filename, results, data_type)
-    return frame_id, timer.average_time, timer.calls, count_config
+    return frame_id, timer.average_time, timer.calls, count_config, dropped_frames
 
 
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo',
@@ -395,6 +405,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     n_frame = 0
     timer_avgs, timer_calls = [], []
     count_config_seqs = []
+    count_dropped_frames = 0
     for seq in seqs:
         output_dir = os.path.join(data_root, '..', 'outputs', exp_name, seq) if save_images or save_videos else None
         logger.info('start seq: {}'.format(seq))
@@ -403,10 +414,12 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
-        nf, ta, tc, count_config = eval_seq(opt, dataloader, data_type, result_filename,
+        nf, ta, tc, count_config, dropped_frames = eval_seq(opt, dataloader, data_type, result_filename,
                                     save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
         count_config_seqs += count_config                                                           # count the selected configurations over all seqs
         plot_config_distribution(result_root, count_config, seq.split("-")[1])                      # plot and save the selected configuration distribution in each seq
+        count_dropped_frames += dropped_frames
+        np.savetxt(osp.join(result_root, 'overall_dropped_frames.txt'), np.asarray([count_dropped_frames]), fmt='%.1f')
 
         n_frame += nf
         timer_avgs.append(ta)

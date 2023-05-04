@@ -167,7 +167,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
             det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
-            online_targets = tracker.update_hm(blob, img0, best_model)
+            online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
 
         print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i+1)))
         online_tlwhs = []
