@@ -1,6 +1,7 @@
 # This script is for multi-resolution training, including original FairMOT, and DeepScale
 # Author: Renjie Xu
 # Time: 2023/3/23
+# Command: # python train_multires.py --task mot --exp_id exp_name --data_cfg '../src/lib/cfg/mot17_half.json' --load_model ./model_best.pth --batch_size 64 --num_epochs 500 --gpus 0,1,2,3 --arch half-dla_34 --num_workers 16 --lr_step 400,450 --multi_res_train True
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,7 +24,7 @@ from logger import Logger
 from datasets.dataset_factory import get_dataset
 from trains.train_factory import train_factory
 
-# python train_multires.py --task mot --exp_id exp_name --data_cfg '../src/lib/cfg/mot17_half.json' --load_model ./model_best.pth --batch_size 64 --num_epochs 500 --gpus 0,1,2,3 --arch half-dla_34 --num_workers 16 --lr_step 400,450 --multi_res_train True
+
 
 def main(opt):
     torch.manual_seed(opt.seed)

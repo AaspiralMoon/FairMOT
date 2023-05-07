@@ -71,21 +71,21 @@ def get_mota(xlsx_path):
 # df.to_excel(osp.join(exp_path, 'mota_multires_{}_to_{}.xlsx'.format(start_point, end_point)), engine="openpyxl")
 
 ## Multi-Knob
-exp_id = 'multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200_1101_to_1150'           # modify here
+exp_id = 'multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200_1112_to_1150'           # modify here
 result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 exp_path = osp.join(result_root, exp_id)
 xlsx_path = osp.join(exp_path, 'summary_{}.xlsx'.format(exp_id))
 model_root = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200'  # modify here
 
-start_point = 1101           # modify here
+start_point = 1112           # modify here
 end_point = 1150
-thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7']
+thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11']
 data = {}
 
 for i in range(start_point, end_point + 1):  # model_idx
     mota_list = []
     for thresh in thresh_list:
-        cmd_str = 'CUDA_VISIBLE_DEVICES=1 python track_half_multiknob.py \
+        cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
                 --exp_id {} \
                 --task mot_multiknob \
                 --load_model {}/model_{}.pth \

@@ -19,21 +19,22 @@ result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 # track_half_multiknob with different sp and thresh
 # sp_list = [40, 20, 10, 2]
 sp_list = [40]
-thresh_list = ['C0']
+thresh_list = ['C2']
 # thresh_list = ['C2']
-# for sp in sp_list:
-#     for thresh in thresh_list:
-#         exp_id = 'multiknob_0.4_{}_{}'.format(sp, thresh)
-#         exp_path = osp.join(result_root, exp_id)
-#         cmd_str = 'CUDA_VISIBLE_DEVICES=0 python track_half_multiknob.py \
-#                 --exp_id {} \
-#                 --task mot_multiknob \
-#                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
-#                 --load_full_model ../models/full-dla_34.pth \
-#                 --load_half_model ../models/half-dla_34.pth \
-#                 --load_quarter_model ../models/quarter-dla_34.pth \
-#                 --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
-#         os.system(cmd_str)
+for sp in sp_list:
+    for thresh in thresh_list:
+        exp_id = 'test'
+        # exp_id = 'multiknob_0.4_{}_{}'.format(sp, thresh)
+        exp_path = osp.join(result_root, exp_id)
+        cmd_str = 'CUDA_VISIBLE_DEVICES=2 python track_half_multiknob.py \
+                --exp_id {} \
+                --task mot_multiknob \
+                --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
+                --load_full_model ../models/full-dla_34.pth \
+                --load_half_model ../models/half-dla_34.pth \
+                --load_quarter_model ../models/quarter-dla_34.pth \
+                --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
+        os.system(cmd_str)
 
 # for sp in sp_list:
 #     for thresh in thresh_list:
@@ -48,24 +49,24 @@ thresh_list = ['C0']
 #                 --switch_period {} --threshold_config {}'.format(sp, thresh)
 #         os.system(cmd_str)
 
-for sp in sp_list:
-    for thresh in thresh_list:
-        exp_id = 'multiknob_fr_0.4_{}_{}'.format(sp, thresh)
-        exp_path = osp.join(result_root, exp_id)
-        cmd_str = 'CUDA_VISIBLE_DEVICES=1 python track_half_multiknob_fr.py \
-                --exp_id {} \
-                --task mot_multiknob \
-                --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
-                --load_full_model ../models/full-dla_34.pth \
-                --load_half_model ../models/half-dla_34.pth \
-                --load_quarter_model ../models/quarter-dla_34.pth \
-                --segment 20 \
-                --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
-        start_time = time.time()
-        os.system(cmd_str)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        np.savetxt(osp.join(exp_path, 'overall_execution_time.txt'), np.asarray([execution_time]), fmt='%.1f')
+# for sp in sp_list:
+#     for thresh in thresh_list:
+#         exp_id = 'multiknob_fr_0.4_{}_{}'.format(sp, thresh)
+#         exp_path = osp.join(result_root, exp_id)
+#         cmd_str = 'CUDA_VISIBLE_DEVICES=1 python track_half_multiknob_fr.py \
+#                 --exp_id {} \
+#                 --task mot_multiknob \
+#                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
+#                 --load_full_model ../models/full-dla_34.pth \
+#                 --load_half_model ../models/half-dla_34.pth \
+#                 --load_quarter_model ../models/quarter-dla_34.pth \
+#                 --segment 20 \
+#                 --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
+#         start_time = time.time()
+#         os.system(cmd_str)
+#         end_time = time.time()
+#         execution_time = end_time - start_time
+#         np.savetxt(osp.join(exp_path, 'overall_execution_time.txt'), np.asarray([execution_time]), fmt='%.1f')
 
 # track_half with different model and imgsz
 imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
