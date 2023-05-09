@@ -32,13 +32,10 @@ def heatmap_to_binary(heatmap, threshold):
 def hadamard_operation(A, B): # Element-wise Hadamard product
     return A * B 
 
-def compare_hms(hm, hm_knob):
+def compare_hms(hm_knob):
     det_rate_list = []
-    hm = _nms(hm)
     hm_knob = _nms(hm_knob)
-    hm = heatmap_to_binary(hm, 0.4)
-    hm_knob = heatmap_to_binary(hm_knob, 0.4)
-    hm = hm.squeeze()                       
+    hm_knob = heatmap_to_binary(hm_knob, 0.4)                  
     hm_knob = hm_knob.squeeze(0)
     for i in range(hm_knob.shape[0]):
         det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
@@ -151,7 +148,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
+        if (i - start_frame) % opt.switch_period == 0:
             best_config_idx = 0
         best_config = configs[best_config_idx]
         best_imgsz, best_model = best_config.split('+')
@@ -161,10 +158,10 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
-        if (i - start_frame) % opt.switch_period == 0 or i == start_frame:
+        if (i - start_frame) % opt.switch_period == 0:
             print('Running switching...')
-            online_targets, hm, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
-            det_rate_list = compare_hms(hm, hm_knob)                                  # calculate the detection rate
+            online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
+            det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
             online_targets, _, _ = tracker.update_hm(blob, img0, best_model)

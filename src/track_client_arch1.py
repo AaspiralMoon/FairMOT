@@ -1,7 +1,7 @@
 # This script is for tracking on the client
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: python track_client.py --data_root /nfs/u40/nalaiek/data/MOT17/MOT17/images/train
+# Command: python track_client.py
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,9 +19,9 @@ import cv2
 
 import datasets.dataset.jde as datasets
 from opts import opts
+from datasets.dataset.jde import letterbox
 
 class Client:
-    connection = None
     def __init__(self, server_address,port, is_client=True):
         self.received_byte = b""
         self.soc = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
@@ -41,7 +41,7 @@ class Client:
                
         except BaseException as e:
             print("Error Connecting to the Server: {msg}".format(msg=e))
-            # self.soc.close()
+            self.soc.close()
             print("Socket Closed.")
         
     def send(self, data):
@@ -52,61 +52,49 @@ class Client:
         
     def receive(self, buffer_size=4096):        
         received_data = None
-        try:
-            payload_size = struct.calcsize(">L")
-            while len(self.received_byte) < payload_size:
-                # print("Recv: {}".format(len(data)))
-                self.received_byte += self.connection.recv(buffer_size)
-            packed_msg_size = self.received_byte[:payload_size]
-            self.received_byte = self.received_byte[payload_size:]
-            msg_size = struct.unpack(">L", packed_msg_size)[0]
-            # print("receive size: {}".format(msg_size))
-            self.receive_size += msg_size
-            while len(self.received_byte) < msg_size:
-                self.received_byte += self.connection.recv(buffer_size)
-            frame_data = self.received_byte[:msg_size]
-            self.received_byte = self.received_byte[msg_size:]    
-            received_data = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
-        except BaseException as e:
-                print("Error Receiving Data from the Client: {msg}.\n".format(msg=e))
-                import sys
-                sys.exit(0)
-                return received_data
+        payload_size = struct.calcsize(">L")
+        while len(self.received_byte) < payload_size:
+            self.received_byte += self.connection.recv(buffer_size)
+        packed_msg_size = self.received_byte[:payload_size]
+        self.received_byte = self.received_byte[payload_size:]
+        msg_size = struct.unpack(">L", packed_msg_size)[0]
+        self.receive_size += msg_size
+        while len(self.received_byte) < msg_size:
+            self.received_byte += self.connection.recv(buffer_size)
+        frame_data = self.received_byte[:msg_size]
+        self.received_byte = self.received_byte[msg_size:]    
+        received_data = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
         return received_data
-    
-    
-def reshape_image(img0,sizes,best_res_label):
-    img, _, _, _ = letterbox(img0, height= sizes[best_res_label][1],
-                             width= sizes[best_res_label][0])
-    return img, img0.shape
 
-    
-def letterbox(img, height=608, width=1088,
-              color=(127.5, 127.5, 127.5)):  # resize a rectangular image to a padded rectangular
-    shape = img.shape[:2]  # shape = [height, width]
-    ratio = min(float(height) / shape[0], float(width) / shape[1])
-    new_shape = (round(shape[1] * ratio), round(shape[0] * ratio))  # new_shape = [width, height]
-    dw = (width - new_shape[0]) / 2  # width padding
-    dh = (height - new_shape[1]) / 2  # height padding
-    top, bottom = round(dh - 0.1), round(dh + 0.1)
-    left, right = round(dw - 0.1), round(dw + 0.1)
-    img = cv2.resize(img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
-    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
-    return img, ratio, dw, dh
+def pre_processing(img0, img_size=(1088, 608)):
+    img, _, _, _ = letterbox(img0, width=img_size[0], height=img_size[1])
+    img = img[:, :, ::-1].transpose(2, 0, 1)
+    img = np.ascontiguousarray(img, dtype=np.float32)
+    img /= 255.0
+    return img
 
 def main(opt, client, data_root, seqs):
+    total_communication_time = 0
+    total_client_time = 0
     for seq in seqs:
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
-        dataset_info = {'seq_id': seq, 'frame_rate': frame_rate, 'last_frame_id': len(dataloader)}
-        client.send(('D', dataset_info))
+        start_frame = int(len(dataloader) / 2)
+        dataset_info = {'seq': seq, 'frame_rate': frame_rate, 'start_frame': start_frame, 'last_frame': len(dataloader)}
+        client.send(('dataset_info', dataset_info))
+        communication_time = 0
         for i, (path, img, img0) in enumerate(dataloader):
-            if i < int(len(dataloader) / 2):
+            if i < start_frame:
                 continue
             img_info = {'frame_id': int(i + 1), 'img0': img0}
-            client.send(('I', img_info))
-        client.send(('T', None))             # transmission completed, terminate the connetction
+            start_communication = time.time()
+            client.send(('original_img', img_info))
+            end_communication = time.time()
+            communication_time += (end_communication - start_communication)
+        total_communication_time += communication_time
+    time_info = {'total_communication_time': total_communication_time, 'total_client_time': total_client_time}
+    client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
 
 if __name__ == '__main__':
     client = Client(server_address='localhost', port=8223)

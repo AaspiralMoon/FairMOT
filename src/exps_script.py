@@ -26,11 +26,10 @@ for sp in sp_list:
         exp_id = 'test'
         # exp_id = 'multiknob_0.4_{}_{}'.format(sp, thresh)
         exp_path = osp.join(result_root, exp_id)
-        cmd_str = 'CUDA_VISIBLE_DEVICES=2 python track_half_multiknob.py \
+        cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
                 --exp_id {} \
                 --task mot_multiknob \
                 --load_model /nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/multiknob_res_and_model_full_crowdhuman_multires_freeze_real_1.00_1200/model_1101.pth \
-                --load_full_model ../models/full-dla_34.pth \
                 --load_half_model ../models/half-dla_34.pth \
                 --load_quarter_model ../models/quarter-dla_34.pth \
                 --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
