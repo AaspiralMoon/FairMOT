@@ -39,12 +39,6 @@ def main(opt, server, data_root, seqs):
     result_root = os.path.join(data_root, '..', 'results', opt.exp_id)
     mkdir_if_missing(result_root)
 
-    current_seq = None
-    tracker = None
-    seq = None
-    frame_rate = None
-    frame_id = None
-    img0 = None
     accs = []
     total_server_time = 0
     total_communication_time = 0
@@ -58,6 +52,8 @@ def main(opt, server, data_root, seqs):
                 dataset_info = data
                 seq = dataset_info['seq']
                 frame_rate = dataset_info['frame_rate']
+                tracker = JDETracker(opt, frame_rate=frame_rate)
+                continue
 
             elif data_type == 'original_img':
                 img_info = data
@@ -71,6 +67,7 @@ def main(opt, server, data_root, seqs):
                 write_results(result_filename, results, data_type='mot')
                 evaluator = Evaluator(data_root, seq, data_type='mot')
                 accs.append(evaluator.eval_file(result_filename))   
+                continue
 
             elif data_type == 'terminate':
                 time_info = data
@@ -105,13 +102,6 @@ def main(opt, server, data_root, seqs):
             else:
                 print('Unknown data type: {}'.format(data_type))
                 continue
-
-            if seq is not None and frame_rate is not None:
-                if seq != current_seq:
-                    current_seq = seq
-                    frame_id = None
-                    img0 = None
-                    tracker = JDETracker(opt, frame_rate=frame_rate)
                     
             if frame_id is not None and img0 is not None:       
                 img0 = cv2.imdecode(img0, 1)  
@@ -132,9 +122,6 @@ def main(opt, server, data_root, seqs):
                 server.send(best_config_info)
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
-                
-                frame_id = None
-                img0 = None
 
 if __name__ == "__main__":
     server = Client(server_address='localhost', port=8223, is_client=False)

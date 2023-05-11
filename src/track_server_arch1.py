@@ -44,14 +44,6 @@ def main(opt, server, data_root, seqs):
     result_root = os.path.join(data_root, '..', 'results', opt.exp_id)
     mkdir_if_missing(result_root)
 
-    current_seq = None
-    tracker = None
-    seq = None
-    frame_rate = None
-    start_frame = None
-    last_frame = None
-    frame_id = None
-    img0 = None
     accs = []
     total_server_time = 0
     num_frames = 0
@@ -67,6 +59,10 @@ def main(opt, server, data_root, seqs):
                 frame_rate = dataset_info['frame_rate']
                 start_frame = dataset_info['start_frame']
                 last_frame = dataset_info['last_frame']
+                results = []
+                result_filename = os.path.join(result_root, '{}.txt'.format(seq))
+                tracker = JDETracker(opt, frame_rate=frame_rate)
+                continue
 
             elif data_type == 'original_img':
                 img_info = data
@@ -98,22 +94,14 @@ def main(opt, server, data_root, seqs):
                     namemap=mm.io.motchallenge_metric_names
                 )
                 print(strsummary)
+                print('num_frames: ', num_frames)
                 Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(opt.exp_id)))
                 break
 
             else:
                 print('Unknown data type: {}'.format(data_type))
                 continue
-
-            if seq is not None and frame_rate is not None and start_frame is not None and last_frame is not None:
-                if seq != current_seq:
-                    current_seq = seq
-                    results = []
-                    frame_id = None
-                    img0 = None
-                    tracker = JDETracker(opt, frame_rate=frame_rate)
-                    result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-                    
+                
             if frame_id is not None and img0 is not None:
                 if (frame_id - 1 - start_frame) % opt.switch_period == 0:
                     best_config_idx = 0
