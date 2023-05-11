@@ -444,7 +444,7 @@ class JDETracker(object):
             return dets, output_stracks
         return output_stracks
 
-    def update_hm(self, im_blob, img0, model_id, if_object_association=True):
+    def update_hm(self, im_blob, img0, model_id, do_object_association=True):
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
@@ -490,7 +490,7 @@ class JDETracker(object):
         dets = dets[remain_inds]
         id_feature = id_feature[remain_inds]
 
-        if not if_object_association:
+        if not do_object_association:
             return hm_knob, dets, id_feature
         
         if self.opt.load_full_classifier and self.opt.load_half_classifier and self.opt.load_quarter_classifier:

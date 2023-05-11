@@ -76,7 +76,6 @@ def main(opt, server, data_root, seqs):
             elif data_type == 'terminate':
                 time_info = data
 
-                # calculate server computation time
                 total_communication_time = time_info['total_communication_time']
                 total_client_time = time_info['total_client_time']
                 
@@ -86,8 +85,8 @@ def main(opt, server, data_root, seqs):
                 avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)
 
                 avg_time_info = {'avg_communication_time': avg_communication_time, 'avg_client_time': avg_client_time, 'avg_server_time': avg_server_time, 'avg_fps': avg_fps}
-                with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:  # also save the results of the 3 runs
-                    file.write(json.dumps(avg_time_info)) # use `json.loads` to do the reverse
+                with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:
+                    file.write(json.dumps(avg_time_info))
 
                 # evaluate MOTA
                 metrics = mm.metrics.motchallenge_metrics
@@ -121,6 +120,7 @@ def main(opt, server, data_root, seqs):
                 best_config = configs[best_config_idx]
                 best_imgsz, best_model = best_config.split('+')
 
+                img0 = cv2.imdecode(img0, 1)
                 img = pre_processing(img0, ast.literal_eval(best_imgsz))              
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 start_server_computation = time.time()                  # start time for server computation

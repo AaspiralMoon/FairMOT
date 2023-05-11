@@ -8,21 +8,19 @@ from __future__ import division
 from __future__ import print_function
 
 import _init_paths
-import socket
-import pickle
-import struct
 import os
 import os.path as osp
-import numpy as np
 import time
 import cv2
 
 import datasets.dataset.jde as datasets
 from opts import opts
-from datasets.dataset.jde import letterbox
 from track_client_arch1 import Client, pre_processing
 
 def main(opt, client, data_root, seqs):
+    total_communication_time = 0
+    total_client_time = 0
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
     for seq in seqs:
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
@@ -34,16 +32,31 @@ def main(opt, client, data_root, seqs):
             if i < start_frame:
                 continue
             if (i - start_frame) % opt.switch_period == 0:
+                start_encoding = time.time()
+                _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
+                end_encoding = time.time()
+                total_client_time += (end_encoding - start_encoding)
                 img_info = {'frame_id': int(i + 1), 'img0': img0}
+                start_communication = time.time()
                 client.send(('original_img', img_info))
+                end_communication = time.time()
+                total_communication_time += (end_communication - start_communication)
                 received_data = client.receive()
                 if received_data:
                     best_imgsz = received_data['best_imgsz']
             else:
-                img = pre_processing(img0, best_imgsz)
+                img = pre_processing(img0, best_imgsz, do_letterbox=True, do_transformation=False)
+                start_encoding = time.time()
+                _, img = cv2.imencode('.jpg', img, encode_param)        # encoding
+                end_encoding = time.time()
+                total_client_time += (end_encoding - start_encoding)
                 img_info = {'frame_id': int(i + 1), 'img': img}
+                start_communication = time.time()
                 client.send(('scaled_img', img_info))
-    client.send(('terminate', None))                     # transmission completed, terminate the connetction
+                end_communication = time.time()
+                total_communication_time += (end_communication - start_communication)
+    time_info = {'total_communication_time': total_communication_time, 'total_client_time': total_client_time}
+    client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
 
 if __name__ == '__main__':
     client = Client(server_address='localhost', port=8223)

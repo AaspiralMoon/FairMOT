@@ -12,24 +12,21 @@ import os
 import os.path as osp
 import cv2
 import logging
-import argparse
 import motmetrics as mm
-import numpy as np
 import torch
 import ast
+import time
+import json
 
 from tracker.multitracker import JDETracker
-from tracking_utils import visualization as vis
 from tracking_utils.log import logger
-from tracking_utils.timer import Timer
 from tracking_utils.evaluation import Evaluator
-import datasets.dataset.jde as datasets
-
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 from track_client_arch1 import Client, pre_processing
 from track_half import write_results
 from track_half_multiknob import compare_hms, update_config
+
 
 def main(opt, server, data_root, seqs):
     logger.setLevel(logging.INFO)
@@ -52,6 +49,9 @@ def main(opt, server, data_root, seqs):
     frame_id = None
     img0 = None
     accs = []
+    total_server_time = 0
+    total_communication_time = 0
+    num_frames = 0
 
     while True:
         received_data = server.receive()
@@ -76,6 +76,21 @@ def main(opt, server, data_root, seqs):
                 img = img_info['img']
 
             elif data_type == 'terminate':
+                time_info = data
+
+                total_communication_time += time_info['total_communication_time']
+                total_client_time = time_info['total_client_time']
+                
+                avg_communication_time = round(total_communication_time * 1000 / num_frames, 1)
+                avg_client_time = round(total_client_time * 1000 / num_frames, 1)
+                avg_server_time = round(total_server_time * 1000 / num_frames, 1)
+                avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)
+
+                avg_time_info = {'avg_communication_time': avg_communication_time, 'avg_client_time': avg_client_time, 'avg_server_time': avg_server_time, 'avg_fps': avg_fps}
+                with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:
+                    file.write(json.dumps(avg_time_info))
+
+                # evaluate MOTA   
                 metrics = mm.metrics.motchallenge_metrics
                 mh = mm.metrics.create()
                 summary = Evaluator.get_summary(accs, seqs, metrics)
@@ -85,6 +100,7 @@ def main(opt, server, data_root, seqs):
                     namemap=mm.io.motchallenge_metric_names
                 )
                 print(strsummary)
+                print('num_frames: ', num_frames)
                 Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(opt.exp_id)))
                 break
 
@@ -104,22 +120,35 @@ def main(opt, server, data_root, seqs):
                     
             if (frame_id is not None and img0 is not None) or (frame_id is not None and img is not None):           
                 if (frame_id - 1 - start_frame) % opt.switch_period == 0:
+                    img0 = cv2.imdecode(img0, 1)
                     img = pre_processing(img0)         
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
                     print('Running switching...')
+                    start_server_computation = time.time()                 # start time for server computation
                     online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
                     det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
                     best_config_idx = update_config(det_rate_list, opt.threshold_config)
+                    end_server_computation = time.time()                   # end time for server computation
+                    total_server_time += (end_server_computation - start_server_computation)
                     best_config = configs[best_config_idx]
                     best_imgsz, best_model = best_config.split('+')
                     print('Running imgsz: (1088, 608) model: full-dla_34 on image: {}'.format(str(frame_id)))
                     best_config_info = {'best_imgsz': ast.literal_eval(best_imgsz), 'best_model': best_model}
+                    start_communication = time.time()
                     server.send(best_config_info)
+                    end_communication = time.time()
+                    total_communication_time += (end_communication - start_communication)
                 else:
+                    img = cv2.imdecode(img, 1)
+                    img = pre_processing(img, do_letterbox=False, do_transformation=True)
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
-                    online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
+                    start_server_computation = time.time()                 # start time for server computation
+                    online_targets, _, _ = tracker.update_hm(blob, img0, best_model)             
+                    end_server_computation = time.time()                   # end time for server computation
+                    total_server_time += (end_server_computation - start_server_computation)
                     print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id)))
 
+                num_frames += 1
                 online_tlwhs = [t.tlwh for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 online_ids = [t.track_id for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 results.append((frame_id, online_tlwhs, online_ids))

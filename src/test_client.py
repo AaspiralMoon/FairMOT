@@ -21,6 +21,8 @@ import datasets.dataset.jde as datasets
 from opts import opts
 from datasets.dataset.jde import letterbox
 
+os.environ['CV_IO_MAX_IMAGE_PIXELS']='1099511627776'
+
 class Client:
     def __init__(self, server_address,port, is_client=True):
         self.received_byte = b""
@@ -66,48 +68,32 @@ class Client:
         received_data = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
         return received_data
 
-def pre_processing(img0, img_size=(1088, 608), do_letterbox=True, do_transformation=True):
-    if do_letterbox and do_transformation:
-        img, _, _, _ = letterbox(img0, width=img_size[0], height=img_size[1])
-        img = img[:, :, ::-1].transpose(2, 0, 1)
-        img = np.ascontiguousarray(img, dtype=np.float32)
-        img /= 255.0
-    elif do_letterbox and not do_transformation:
-        img, _, _, _ = letterbox(img0, width=img_size[0], height=img_size[1])
-    elif not do_letterbox and do_transformation:
-        img = img0
-        img = img[:, :, ::-1].transpose(2, 0, 1)
-        img = np.ascontiguousarray(img, dtype=np.float32)
-        img /= 255.0
-    else:
-        raise NotImplementedError
+def pre_processing(img0, img_size=(1088, 608)):
+    img, _, _, _ = letterbox(img0, width=img_size[0], height=img_size[1])
+    # img = img[:, :, ::-1].transpose(2, 0, 1)
+    # img = np.ascontiguousarray(img, dtype=np.float32)
+    # img /= 255.0
     return img
 
 def main(opt, client, data_root, seqs):
-    total_communication_time = 0
-    total_client_time = 0
-    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
     for seq in seqs:
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
-        meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
-        frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         start_frame = int(len(dataloader) / 2)
-        dataset_info = {'seq': seq, 'frame_rate': frame_rate, 'start_frame': start_frame, 'last_frame': len(dataloader)}
-        client.send(('dataset_info', dataset_info))
         for i, (path, img, img0) in enumerate(dataloader):
             if i < start_frame:
                 continue
-            start_encoding = time.time()
-            _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
-            end_encoding = time.time()
-            total_client_time += (end_encoding - start_encoding)
-            img_info = {'frame_id': int(i + 1), 'img0': img0}
-            start_communication = time.time()
-            client.send(('original_img', img_info))
-            end_communication = time.time()
-            total_communication_time += (end_communication - start_communication)
-    time_info = {'total_communication_time': total_communication_time, 'total_client_time': total_client_time}
-    client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
+            start_pre_processing = time.time()
+            img2 = pre_processing(img0)
+            end_pre_processing = time.time()
+            print('Pre-processing time: ', end_pre_processing - start_pre_processing)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+            result, img3 = cv2.imencode('.jpg', img2, encode_param)
+            start_client_send = time.time()
+            client.send(img3)
+            end_client_send = time.time()
+            print('Client sending time: ', end_client_send - start_client_send)
+            import sys
+            sys.exit(0)
 
 if __name__ == '__main__':
     client = Client(server_address='localhost', port=8223)
