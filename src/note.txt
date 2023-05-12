@@ -23,3 +23,11 @@ should always use 1,1,0 for gt and results
 3. check i, frame_id
 
 # plot durve for different seq
+
+
+# measure bandwidth
+server: iperf3 -s -p 8223
+client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1        (download)
+client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1 -R     (upload)
+
+# measure average round-trip latency

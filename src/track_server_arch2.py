@@ -145,7 +145,7 @@ def main(opt, server, data_root, seqs):
                 accs.append(evaluator.eval_file(result_filename))
 
 if __name__ == "__main__":
-    server = Client(server_address='localhost', port=8223, is_client=False)
+    server = Client(server_address='130.113.68.165', port=8223, is_client=False)
     opt = opts().init()
     seqs_str = '''MOT17-02-SDP
                   MOT17-04-SDP

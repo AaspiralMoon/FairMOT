@@ -22,8 +22,8 @@ from opts import opts
 from datasets.dataset.jde import letterbox
 
 class Client:
-    def __init__(self, server_address,port, is_client=True):
-        self.received_byte = b""
+    def __init__(self, server_address, port, is_client=True):
+        self.received_byte = b''
         self.soc = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
         self.is_client = is_client
         self.send_size = 0
@@ -32,36 +32,36 @@ class Client:
             if self.is_client:
                 self.connection = self.soc
                 self.connection.connect((server_address, port))
-                print("Successful Connection to the Server.\n")
+                print('Successful Connection to the Server.\n')
             else:            
                self.soc.bind((server_address, port))
                self.soc.listen(1)
-               print('Waiting for connections...')
+               print('Waiting for connections...\n')
                self.connection, client_info = self.soc.accept()
                
         except BaseException as e:
-            print("Error Connecting to the Server: {msg}".format(msg=e))
+            print('Error Connecting to the Server: {msg}'.format(msg=e))
             self.soc.close()
-            print("Socket Closed.")
+            print('Socket Closed.\n')
         
     def send(self, data):
         data_byte = pickle.dumps(data)
         size = len(data_byte)    
         self.send_size += size
-        self.connection.sendall(struct.pack(">L", size) + data_byte)
+        self.connection.sendall(struct.pack(">L", size) + data_byte)      # the msg is data_size + data_byte
         
     def receive(self, buffer_size=4096):        
         received_data = None
         payload_size = struct.calcsize(">L")
         while len(self.received_byte) < payload_size:
-            self.received_byte += self.connection.recv(buffer_size)
+            self.received_byte += self.connection.recv(buffer_size)                               # first receive the size of image data: msg_size
         packed_msg_size = self.received_byte[:payload_size]
         self.received_byte = self.received_byte[payload_size:]
         msg_size = struct.unpack(">L", packed_msg_size)[0]
         self.receive_size += msg_size
         while len(self.received_byte) < msg_size:
             self.received_byte += self.connection.recv(buffer_size)
-        frame_data = self.received_byte[:msg_size]
+        frame_data = self.received_byte[:msg_size]                                                # then receive the image data
         self.received_byte = self.received_byte[msg_size:]    
         received_data = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
         return received_data
@@ -110,7 +110,7 @@ def main(opt, client, data_root, seqs):
     client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
 
 if __name__ == '__main__':
-    client = Client(server_address='localhost', port=8223)
+    client = Client(server_address='130.113.68.165', port=8223)
     opt = opts().init()
     seqs_str = '''MOT17-02-SDP
                   MOT17-04-SDP

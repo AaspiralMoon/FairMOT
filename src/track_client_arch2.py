@@ -59,7 +59,7 @@ def main(opt, client, data_root, seqs):
     client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
 
 if __name__ == '__main__':
-    client = Client(server_address='localhost', port=8223)
+    client = Client(server_address='130.113.68.165', port=8223)
     opt = opts().init()
     seqs_str = '''MOT17-02-SDP
                   MOT17-04-SDP
