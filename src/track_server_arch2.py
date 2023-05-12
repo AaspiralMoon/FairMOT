@@ -44,9 +44,10 @@ def main(opt, server, data_root, seqs):
     total_server_time = 0
     total_communication_time = 0
     num_frames = 0
+    total_data_size = 0
 
     while True:
-        received_data = server.receive()
+        received_data, msg_size = server.receive()
         if received_data:
             data_type, data = received_data
 
@@ -65,11 +66,13 @@ def main(opt, server, data_root, seqs):
                 img_info = data
                 frame_id = img_info['frame_id']
                 img0 = img_info['img0']
+                total_data_size += msg_size
 
             elif data_type == 'scaled_img':
                 img_info = data
                 frame_id = img_info['frame_id']
                 img = img_info['img']
+                total_data_size += msg_size
 
             elif data_type == 'terminate':
                 time_info = data
@@ -81,8 +84,9 @@ def main(opt, server, data_root, seqs):
                 avg_client_time = round(total_client_time * 1000 / num_frames, 1)
                 avg_server_time = round(total_server_time * 1000 / num_frames, 1)
                 avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)
+                avg_network_traffic = round(total_data_size / (num_frames * 1024), 1)
 
-                avg_time_info = {'avg_communication_time': avg_communication_time, 'avg_client_time': avg_client_time, 'avg_server_time': avg_server_time, 'avg_fps': avg_fps}
+                avg_time_info = {'avg_fps': avg_fps, 'avg_server_time': avg_server_time, 'avg_client_time': avg_client_time, 'avg_communication_time': avg_communication_time, 'avg_network_traffic': avg_network_traffic}
                 with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:
                     file.write(json.dumps(avg_time_info))
 
@@ -121,8 +125,9 @@ def main(opt, server, data_root, seqs):
                     print('Running imgsz: (1088, 608) model: full-dla_34 on image: {}'.format(str(frame_id)))
                     best_config_info = {'best_imgsz': ast.literal_eval(best_imgsz), 'best_model': best_model}
                     start_communication = time.time()
-                    server.send(best_config_info)
+                    data_size = server.send(best_config_info)
                     end_communication = time.time()
+                    total_data_size += data_size
                     total_communication_time += (end_communication - start_communication)
                 else:
                     img = cv2.imdecode(img, 1)

@@ -50,7 +50,7 @@ def main(opt, client, data_root, seqs):
                 client.send(('original_img', img_info))
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
-                received_data = client.receive()
+                received_data, _ = client.receive()
                 if received_data:
                     best_imgsz = received_data['best_imgsz']
                     best_model = received_data['best_model']
@@ -78,7 +78,7 @@ def main(opt, client, data_root, seqs):
     client.send(('terminate', time_info))                     # transmission completed, terminate the connetction
 
 if __name__ == '__main__':
-    client = Client(server_address='localhost', port=8223)
+    client = Client(server_address='130.113.68.165', port=8223)
     opt = opts().init()
     seqs_str = '''MOT17-02-SDP
                   MOT17-04-SDP

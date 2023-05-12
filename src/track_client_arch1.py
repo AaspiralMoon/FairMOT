@@ -49,6 +49,7 @@ class Client:
         size = len(data_byte)    
         self.send_size += size
         self.connection.sendall(struct.pack(">L", size) + data_byte)      # the msg is data_size + data_byte
+        return size
         
     def receive(self, buffer_size=4096):        
         received_data = None
@@ -64,7 +65,7 @@ class Client:
         frame_data = self.received_byte[:msg_size]                                                # then receive the image data
         self.received_byte = self.received_byte[msg_size:]    
         received_data = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
-        return received_data
+        return received_data, msg_size
 
 def pre_processing(img0, img_size=(1088, 608), do_letterbox=True, do_transformation=True):
     if do_letterbox and do_transformation:

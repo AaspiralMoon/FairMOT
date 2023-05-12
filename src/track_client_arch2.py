@@ -41,7 +41,7 @@ def main(opt, client, data_root, seqs):
                 client.send(('original_img', img_info))
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
-                received_data = client.receive()
+                received_data, _ = client.receive()
                 if received_data:
                     best_imgsz = received_data['best_imgsz']
             else:

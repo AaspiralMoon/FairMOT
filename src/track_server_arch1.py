@@ -47,9 +47,10 @@ def main(opt, server, data_root, seqs):
     accs = []
     total_server_time = 0
     num_frames = 0
+    total_data_size = 0
 
     while True:
-        received_data = server.receive()
+        received_data, msg_size = server.receive()
         if received_data:
             data_type, data = received_data
 
@@ -68,6 +69,7 @@ def main(opt, server, data_root, seqs):
                 img_info = data
                 frame_id = img_info['frame_id']
                 img0 = img_info['img0']
+                total_data_size += msg_size
 
             elif data_type == 'terminate':
                 time_info = data
@@ -79,8 +81,9 @@ def main(opt, server, data_root, seqs):
                 avg_client_time = round(total_client_time * 1000 / num_frames, 1)
                 avg_server_time = round(total_server_time * 1000 / num_frames, 1)
                 avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)
+                avg_network_traffic = round(total_data_size / (num_frames * 1024), 1)
 
-                avg_time_info = {'avg_communication_time': avg_communication_time, 'avg_client_time': avg_client_time, 'avg_server_time': avg_server_time, 'avg_fps': avg_fps}
+                avg_time_info = {'avg_fps': avg_fps, 'avg_server_time': avg_server_time, 'avg_client_time': avg_client_time, 'avg_communication_time': avg_communication_time, 'avg_network_traffic': avg_network_traffic}
                 with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:
                     file.write(json.dumps(avg_time_info))
 
