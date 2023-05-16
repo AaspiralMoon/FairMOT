@@ -188,14 +188,13 @@ class JDETracker(object):
         if opt.reg_offset:
             heads_for_full_half_quarter.update({'reg': 2})
 
-        # if opt.load_full_model:                      
-        #     print('Creating full-dla_34 model...')
-        #     self.full_model = create_model('full-dla_34', heads_for_full_half_quarter, opt.head_conv)
-        #     self.full_model = load_model(self.full_model, opt.load_full_model)
-        #     self.full_model = self.full_model.to(opt.device)
-        #     self.full_model.eval()
-        #     print('Full-dla_34 model created !')
-        self.full_model = self.model
+        if opt.load_full_model:                      
+            print('Creating full-dla_34 model...')
+            self.full_model = create_model('full-dla_34', heads_for_full_half_quarter, opt.head_conv)
+            self.full_model = load_model(self.full_model, opt.load_full_model)
+            self.full_model = self.full_model.to(opt.device)
+            self.full_model.eval()
+            print('Full-dla_34 model created !')
         
         if opt.load_half_model:                      
             print('Creating half-dla_34 model...')

@@ -174,7 +174,27 @@ class PoseYOLOv5s(nn.Module):
         for head in self.heads:
             ret[head] = self.__getattr__(head)(x)
         return [ret]
+    
+    def freeze_except_multiknob_head(self):
+        def freeze_parameters(parameters, freeze=True):
+            for param in parameters:
+                param.requires_grad = not freeze
 
+        def freeze_bn(layer):
+            for module in layer.modules():
+                if isinstance(module, nn.BatchNorm2d):
+                    module.eval()
+
+        # Freeze the backbone network and its BatchNorm layers
+        freeze_parameters(self.backbone.parameters())
+        freeze_bn(self.backbone)
+
+        # Freeze all heads except the hmknob head
+        for head in self.heads:
+            if head != 'hmknob':
+                freeze_parameters(self.__getattr__(head).parameters())
+            else:
+                freeze_parameters(self.__getattr__(head).parameters(), freeze=False)
 
 def get_pose_net(num_layers, heads, head_conv):
     config_file = os.path.join(
