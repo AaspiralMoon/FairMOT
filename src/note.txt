@@ -31,3 +31,4 @@ client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1        (download)
 client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1 -R     (upload)
 
 # measure average round-trip latency
+ping -c 1000 130.113.68.165

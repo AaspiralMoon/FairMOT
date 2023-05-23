@@ -495,7 +495,7 @@ class JDETracker(object):
         if self.opt.load_full_classifier and self.opt.load_half_classifier and self.opt.load_quarter_classifier:
             blob = torch.from_numpy(id_feature).cuda().unsqueeze(0)
             with torch.no_grad():
-                if model_id == 'full-dla_34':
+                if model_id == 'full-dla_34' or model_id == 'full-dla_34-multiknob':
                     id_feature = self.id_full_classifier(blob).squeeze(0).cpu().numpy()
                 elif model_id == 'half-dla_34':
                     id_feature = self.id_half_classifier(blob).squeeze(0).cpu().numpy()

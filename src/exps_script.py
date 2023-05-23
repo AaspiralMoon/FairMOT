@@ -8,6 +8,7 @@ import os.path as osp
 import pandas as pd
 import numpy as np
 import time
+import json
 
 def get_mota(xlsx_path):
     df = pd.read_excel(xlsx_path, engine='openpyxl')
@@ -17,23 +18,32 @@ def get_mota(xlsx_path):
 result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 
 # track_half_multiknob with different sp and thresh
-# sp_list = [40, 20, 10, 2]
-sp_list = [40]
-thresh_list = ['C15']
-# thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10']
+sp_list = [40, 20, 10, 2]
+thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7']
+
 for sp in sp_list:
     for thresh in thresh_list:
-        exp_id = 'multiknob_0.4_{}_{}'.format(sp, thresh)
-        exp_path = osp.join(result_root, exp_id)
-        cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
-                --exp_id {} \
-                --task mot_multiknob \
-                --load_model ../models/full-dla_34-multiknob.pth \
-                --load_full_model ../models/full-dla_34.pth \
-                --load_half_model ../models/half-dla_34.pth \
-                --load_quarter_model ../models/quarter-dla_34.pth \
-                --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
-        os.system(cmd_str)
+        avg_fps_dict = {}
+        for t in range(1, 11):                              # run exps for several times
+            exp_id = 'multiknob_0.4_{}_{}_verify'.format(sp, thresh)
+            exp_path = osp.join(result_root, exp_id)
+            result_path = osp.join(exp_path, 'avg_fps.txt')
+            cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
+                    --exp_id {} \
+                    --task mot_multiknob \
+                    --load_model ../models/full-dla_34-multiknob.pth \
+                    --load_full_model ../models/full-dla_34.pth \
+                    --load_half_model ../models/half-dla_34.pth \
+                    --load_quarter_model ../models/quarter-dla_34.pth \
+                    --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
+            os.system(cmd_str)
+            avg_fps = np.loadtxt(result_path)
+            avg_fps_dict['{}'.format(t)] = avg_fps.item()
+        average = sum(avg_fps_dict.values()) / len(avg_fps_dict)
+        avg_fps_dict['average'] = round(average, 2)
+        np.savetxt(result_path, np.asarray([average]), fmt='%.2f')
+        with open(result_path.replace('avg_fps.txt', 'avg_fps_list.json'), 'w') as file:
+            file.write(json.dumps(avg_fps_dict))
 
 # for sp in sp_list:
 #     for thresh in thresh_list:
@@ -68,11 +78,11 @@ for sp in sp_list:
 #         np.savetxt(osp.join(exp_path, 'overall_execution_time.txt'), np.asarray([execution_time]), fmt='%.1f')
 
 # track_half with different model and imgsz
-imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-imgsz_idx = [0, 1, 2, 3, 4]
-model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-interval_list = [1, 2, 3, 6]
-qp_list = [i for i in range(35, 46)]
+# imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+# imgsz_idx = [0, 1, 2, 3, 4]
+# model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+# interval_list = [1, 2, 3, 6]
+# qp_list = [i for i in range(35, 46)]
 # for idx in imgsz_idx:
 #     for m in model_list:
 #         cmd_str = 'python track_half.py --exp_id {}_{}_multires --task mot --load_model ../models/{}.pth --imgsize_index {} --arch {}'.format(imgsz_list[idx][0], m[:m.find('-')], m, idx, m)

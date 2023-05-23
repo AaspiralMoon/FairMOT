@@ -78,7 +78,7 @@ def main(opt, server, data_root, seqs):
                 total_client_time = time_info['total_client_time']
                 num_frames = time_info['num_frames']
 
-                avg_communication_time = round(total_communication_time * 1000 / num_frames, 1)
+                avg_communication_time = round(total_communication_time * 1000 / num_frames, 10)
                 avg_client_time = round(total_client_time * 1000 / num_frames, 1)
                 avg_server_time = round(total_server_time * 1000 / num_frames, 1)
                 avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)

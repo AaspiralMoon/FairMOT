@@ -42,37 +42,21 @@ def compare_hms(hm_knob):
     return det_rate_list
 
 def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    config_fps_sorted = [14, 11, 13, 8, 10, 7, 5, 12, 9, 4, 6, 2, 1, 3, 0]      # the avg fps of the configurations from high to low: averaged by 10 runs
+    config_fps_sorted = [14, 11, 8, 13, 10, 7, 5, 12, 4, 9, 2, 6, 1, 3, 0]  
     if threshold_config == 'C1':
         thresholds = [99, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C2':
-        thresholds = [99, 0.99, 99, 0, 99, 99, 0.90, 99, 99, 0.99, 99, 99, 99, 99, 99]
+        thresholds = [99, 0.99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
     if threshold_config == 'C3':
-        thresholds = [99, 99, 99, 99, 0.99, 99, 0, 99, 99, 0.85, 99, 99, 0.99, 99, 99]
+        thresholds = [99, 99, 99, 99, 0.95, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
     if threshold_config == 'C4':
-        thresholds = [99, 99, 99, 99, 0.99, 0.99, 99, 0.99, 0.99, 0, 99, 99, 0.85, 99, 99]
+        thresholds = [99, 99, 99, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 99, 99, 0.85, 99, 99]
     if threshold_config == 'C5':
-        thresholds = [99, 99, 99, 99, 99, 0.90, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 0.90, 0.90]
+        thresholds = [99, 99, 99, 99, 99, 0.80, 99, 0.80, 0.90, 99, 0.90, 99, 0, 99, 99]
     if threshold_config == 'C6':
-        thresholds = [99, 99, 99, 99, 99, 0.90, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 0.90, 0.90]
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 99]
     if threshold_config == 'C7':
-        thresholds = [99, 99, 99, 99, 99, 0.85, 99, 0.85, 0.85, 99, 0.85, 0.85, 0, 0.85, 0.85]
-    if threshold_config == 'C8':
-        thresholds = [99, 99, 99, 99, 99, 0.80, 99, 0.80, 0.80, 99, 0.80, 0.80, 0, 0.80, 0.80]
-    if threshold_config == 'C9':
-        thresholds = [99, 99, 99, 99, 99, 0.75, 99, 0.75, 0.75, 99, 0.75, 0.75, 0, 0.75, 0.75]
-    if threshold_config == 'C10':
-        thresholds = [99, 99, 99, 99, 99, 0.70, 99, 0.70, 0.70, 99, 0.70, 0.70, 0, 0.70, 0.70]
-    if threshold_config == 'C11':
-        thresholds = [99, 99, 99, 99, 99, 0.65, 99, 0.65, 0.65, 99, 0.65, 0.65, 0, 0.65, 0.65]
-    if threshold_config == 'C12':
-        thresholds = [99, 99, 99, 99, 99, 0.60, 99, 0.60, 0.60, 99, 0.60, 0.60, 0, 0.60, 0.60]
-    if threshold_config == 'C13':
-        thresholds = [99, 99, 99, 99, 99, 0.55, 99, 0.55, 0.55, 99, 0.55, 0.55, 0, 0.55, 0.55]
-    if threshold_config == 'C14':
-        thresholds = [99, 99, 99, 99, 99, 0.50, 99, 0.50, 0.50, 99, 0.50, 0.50, 0, 0.50, 0.50]
-    if threshold_config == 'C15':
-        thresholds = [99, 0.99, 99, 0, 99, 99, 0.99, 99, 99, 0.99, 99, 99, 99, 99, 99]
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.60]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate >= thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0

@@ -5,17 +5,17 @@ from scipy.optimize import curve_fit
 def quad_func(x, a, b, c):
     return a * x**2 + b * x + c
 
-full_fps = np.array([16.7, 23.3, 28.9, 30.3, 32.2])               # FPS
+full_fps = np.array([16.5, 22.0, 28.1, 28.9, 30.8])               # FPS
 full_mota = np.array([70.7, 68.8, 65.0, 62.9, 58.9])             # MOTA
 
-half_fps = np.array([24.8, 30.0, 34.3, 35.6, 36.6])               # FPS
+half_fps = np.array([24.8, 30.0, 33.0, 34.0, 35.7])               # FPS
 half_mota = np.array([65.5, 62.6, 56.6, 53.9, 51.3])            # MOTA
 
-quarter_fps = np.array([28.7, 33.3, 36.0, 36.8, 37.6])               # FPS
+quarter_fps = np.array([27.9, 32.0, 35.3, 36.2, 37.1])               # FPS
 quarter_mota = np.array([60.2, 58.2, 54.5, 52.2, 47.8])            # MOTA
 
-DC_fps = np.array([18.0, 23.7, 28.4, 30.3, 31.8, 32.2])               # FPS
-DC_mota = np.array([70.7, 69.5, 67.8, 65.4, 62.0, 61.1])          # MOTA
+DC_fps = np.array([18.2, 23.6, 28.3, 30.6, 32.7, 35.6, 36.6])               # FPS
+DC_mota = np.array([70.7, 69.5, 67.7, 65.3, 60.8, 55.1, 53.1])          # MOTA
 
 # DC_fps = np.array([18.0, 23.7, 28.9, 30.4, 32.4, 31.8, 32.2, 32.4, 32.1, 33.2, 32.9, 34.2, 34.9, 35.5])               # FPS
 # DC_mota = np.array([70.7, 69.3, 67.6, 65.4, 62.0, 62.0, 61.1, 60.3, 59.4, 58.4, 57.3, 55.1, 53.9, 53.2])          # MOTA
