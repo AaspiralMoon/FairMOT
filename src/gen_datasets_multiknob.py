@@ -69,11 +69,10 @@ if __name__ == '__main__':
             'MOT17-13-SDP']
     model_root = '../models'
     data_root = '../../datasets/MOT17_multiknob'
-    result_root = osp.join(data_root, 'results_yolo')
+    result_root = osp.join(data_root, 'results')
     mkdir_if_missing(result_root)
     imgsize_index = [0, 1, 2, 3, 4]   # (1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)
-    # model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
-    model_list = ['full-yolo', 'half-yolo', 'quarter-yolo']
+    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
     print('Cleaning...')
     cmd_str = 'rm -rf {}/*'.format(result_root)             # delete previous results
     os.system(cmd_str)
