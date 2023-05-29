@@ -18,24 +18,27 @@ def get_mota(xlsx_path):
 result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 
 # track_half_multiknob with different sp and thresh
-sp_list = [40, 20, 10, 2]
-thresh_list = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7']
+sp_list = [40]
+thresh_list = ['C5', 'C7']
 
 for sp in sp_list:
     for thresh in thresh_list:
         avg_fps_dict = {}
-        for t in range(1, 11):                              # run exps for several times
-            exp_id = 'multiknob_0.4_{}_{}_verify'.format(sp, thresh)
+        for t in range(1, 21):                              # run exps for several times
+            exp_id = 'multiknob_yolo_0.4_{}_{}_verify'.format(sp, thresh)
             exp_path = osp.join(result_root, exp_id)
             result_path = osp.join(exp_path, 'avg_fps.txt')
             cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
                     --exp_id {} \
                     --task mot_multiknob \
-                    --load_model ../models/full-dla_34-multiknob.pth \
-                    --load_full_model ../models/full-dla_34.pth \
-                    --load_half_model ../models/half-dla_34.pth \
-                    --load_quarter_model ../models/quarter-dla_34.pth \
-                    --switch_period {} --threshold_config {}'.format(exp_id, sp, thresh)
+                    --load_model ../models/full-yolo-multiknob.pth \
+                    --load_full_model ../models/full-yolo.pth \
+                    --load_half_model ../models/half-yolo.pth \
+                    --load_quarter_model ../models/quarter-yolo.pth \
+                    --arch full-yolo \
+                    --reid_dim 64 \
+                    --switch_period {} \
+                    --threshold_config {}'.format(exp_id, sp, thresh)
             os.system(cmd_str)
             avg_fps = np.loadtxt(result_path)
             avg_fps_dict['{}'.format(t)] = avg_fps.item()

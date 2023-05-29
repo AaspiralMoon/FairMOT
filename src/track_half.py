@@ -58,6 +58,14 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     len_all = len(dataloader)
     start_frame = int(len_all / 2)
     frame_id = int(len_all / 2)
+
+    warm_up_cycles = 10
+    for i in range(warm_up_cycles):
+        print('Warming up model...')
+        warm_up_data = next(iter(dataloader))
+        warm_up_img = torch.from_numpy(warm_up_data[1]).cuda().unsqueeze(0)   
+        _ = tracker.update(warm_up_img, warm_up_data[2])
+
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue

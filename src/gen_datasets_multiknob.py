@@ -53,10 +53,17 @@ def gen_detections(data_root, result_root, model_root, seqs, imgsize_index, mode
     for seq in seqs:
         for idx in imgsize_index:
             for m in model_list:
-                img_path = osp.join(data_root, 'train', seq, 'img1')
+                img_path = osp.join(data_root, 'train_yolo', seq, 'img1')
                 result_path = osp.join(result_root, seq, '{}_{}'.format(imgsize_list[idx][0], m[:m.find('-')]))
                 mkdir_if_missing(result_path)
-                cmd_str = 'python gen_detections.py --data_dir {} --output_root {} --load_model {}/{}.pth --imgsize_index {} --arch {} --gen_dets'.format(img_path, result_path, model_root, m, idx, m)
+                cmd_str = 'python gen_detections.py \
+                            --data_dir {} \
+                            --output_root {} \
+                            --load_model {}/{}.pth \
+                            --imgsize_index {} \
+                            --reid_dim 64 \
+                            --arch {} \
+                            --gen_dets'.format(img_path, result_path, model_root, m, idx, m)
                 os.system(cmd_str)
 
 if __name__ == '__main__':
@@ -72,7 +79,6 @@ if __name__ == '__main__':
     result_root = osp.join(data_root, 'results_yolo')
     mkdir_if_missing(result_root)
     imgsize_index = [0, 1, 2, 3, 4]   # (1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)
-    # model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
     model_list = ['full-yolo', 'half-yolo', 'quarter-yolo']
     print('Cleaning...')
     cmd_str = 'rm -rf {}/*'.format(result_root)             # delete previous results

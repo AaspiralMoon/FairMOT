@@ -41,22 +41,39 @@ def compare_hms(hm_knob):
         det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
     return det_rate_list
 
-def update_config(det_rate_list, threshold_config):                      # the threshold is step-wise               
-    config_fps_sorted = [14, 11, 8, 13, 10, 7, 5, 12, 4, 9, 2, 6, 1, 3, 0]  
+def update_config(det_rate_list, threshold_config):             
+    # config_fps_sorted = [14, 11, 8, 13, 10, 7, 5, 12, 4, 9, 2, 6, 1, 3, 0]                      # for dla34
+    # if threshold_config == 'C1':
+    #     thresholds = [99, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    # if threshold_config == 'C2':
+    #     thresholds = [99, 0.99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
+    # if threshold_config == 'C3':
+    #     thresholds = [99, 99, 99, 99, 0.95, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
+    # if threshold_config == 'C4':
+    #     thresholds = [99, 99, 99, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 99, 99, 0.85, 99, 99]
+    # if threshold_config == 'C5':
+    #     thresholds = [99, 99, 99, 99, 99, 0.80, 99, 0.80, 0.90, 99, 0.90, 99, 0, 99, 99]
+    # if threshold_config == 'C6':
+    #     thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 99]
+    # if threshold_config == 'C7':
+    #     thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.60]
+    config_fps_sorted = [14, 11, 8, 13, 10, 5, 7, 12, 9, 4, 2, 6, 3, 1, 0]                        # for yolo
     if threshold_config == 'C1':
         thresholds = [99, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
     if threshold_config == 'C2':
-        thresholds = [99, 0.99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
+        thresholds = [99, 99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
     if threshold_config == 'C3':
-        thresholds = [99, 99, 99, 99, 0.95, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
+        thresholds = [99, 99, 99, 99, 99, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
     if threshold_config == 'C4':
-        thresholds = [99, 99, 99, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 99, 99, 0.85, 99, 99]
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 0.90, 99, 0.85, 99, 99]
     if threshold_config == 'C5':
-        thresholds = [99, 99, 99, 99, 99, 0.80, 99, 0.80, 0.90, 99, 0.90, 99, 0, 99, 99]
+        thresholds = [99, 99, 99, 99, 99, 0.85, 99, 99, 99, 99, 0.85, 99, 0, 99, 99]
     if threshold_config == 'C6':
-        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 99]
+        thresholds = [99, 99, 99, 99, 99, 0, 99, 99, 0.70, 99, 99, 0.70, 99, 99, 99]
     if threshold_config == 'C7':
-        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.60]
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 0.65]
+    if threshold_config == 'C8':
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.50]
     configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate >= thresholds[idx]]
     if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
         best_config_idx = 0
@@ -121,7 +138,7 @@ def write_results(filename, results, data_type):
 
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    model_list = ['full', 'half', 'quarter']
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -151,11 +168,11 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.tic()
         if (i - start_frame) % opt.switch_period == 0:
             print('Running switching...')
-            online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
+            online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
             det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
-            online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
+            online_targets = tracker.update_hm(blob, img0, best_model)
 
         print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id + 1)))
         online_tlwhs = []
