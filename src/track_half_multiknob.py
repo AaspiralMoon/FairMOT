@@ -10,6 +10,7 @@ import logging
 import argparse
 import motmetrics as mm
 import numpy as np
+import pandas as pd
 import torch
 import ast
 import matplotlib.pyplot as plt
@@ -108,9 +109,13 @@ def plot_config_distribution(result_root, count_config, seq=None):
     if seq is None:
         plt.title('Selected Configurations in ALL', fontsize=14)
         plt.savefig(osp.join(result_root, 'config_distribution_all.png'), dpi=300, bbox_inches='tight')
+        df = pd.DataFrame(list(count_dict.items()), columns=['Configuration', 'Count'])
+        df.to_excel(osp.join(result_root, 'config_distribution_all.xlsx'), index=False)
     else:
         plt.title('Selected Configurations in Seq{}'.format(seq), fontsize=14)
         plt.savefig(osp.join(result_root, 'config_distribution_{}.png'.format(seq)), dpi=300, bbox_inches='tight')
+        df = pd.DataFrame(list(count_dict.items()), columns=['Configuration', 'Count'])
+        df.to_excel(osp.join(result_root, 'config_distribution_{}.xlsx'.format(seq)), index=False)
     plt.close()
     plt.clf()
             
@@ -245,8 +250,8 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     timer_calls = np.asarray(timer_calls)
     all_time = np.dot(timer_avgs, timer_calls)
     avg_time = all_time / np.sum(timer_calls)
-    if opt.is_profiling:
-        np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
+    # if opt.is_profiling:
+    #     np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
     plot_config_distribution(result_root, count_config_seqs)                                         # plot and save the selected configuration distribution over all seqs
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 

@@ -2,16 +2,16 @@
 # Author: Renjie Xu
 # Time: 2023/2/22
 
-# import _init_paths
-# import torch
-# import os
-# import os.path as osp
-# import numpy as np
-# import numpy as np
-# import matplotlib
-# import time
-# import matplotlib.pyplot as plt
-# import cv2
+import _init_paths
+import torch
+import os
+import os.path as osp
+import numpy as np
+import numpy as np
+import matplotlib
+import time
+import matplotlib.pyplot as plt
+import cv2
 
 # detection_result_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/results'
 # save_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels/verify_detections'
@@ -130,7 +130,5 @@
 # # Save the plot as an image
 # plt.savefig('pareto_front.png', dpi=300)
 
-data = [1,2,3]
-gt = []
-gt.append(data)
-print(gt[0])
+hm_300 = torch.load('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results/1088_full_dla_hm/MOT17-02-SDP_hm/300.pth')
+print(hm_300.shape)

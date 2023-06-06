@@ -19,13 +19,13 @@ result_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results'
 
 # track_half_multiknob with different sp and thresh
 sp_list = [40]
-thresh_list = ['C5', 'C7']
+thresh_list = ['C1', 'C2']
 
 for sp in sp_list:
     for thresh in thresh_list:
         avg_fps_dict = {}
-        for t in range(1, 21):                              # run exps for several times
-            exp_id = 'multiknob_yolo_0.4_{}_{}_verify'.format(sp, thresh)
+        for t in range(1, 2):                                              # run exps for several times
+            exp_id = 'multiknob_yolo_0.4_{}_{}'.format(sp, thresh)
             exp_path = osp.join(result_root, exp_id)
             result_path = osp.join(exp_path, 'avg_fps.txt')
             cmd_str = 'CUDA_VISIBLE_DEVICES=3 python track_half_multiknob.py \
@@ -40,13 +40,13 @@ for sp in sp_list:
                     --switch_period {} \
                     --threshold_config {}'.format(exp_id, sp, thresh)
             os.system(cmd_str)
-            avg_fps = np.loadtxt(result_path)
-            avg_fps_dict['{}'.format(t)] = avg_fps.item()
-        average = sum(avg_fps_dict.values()) / len(avg_fps_dict)
-        avg_fps_dict['average'] = round(average, 2)
-        np.savetxt(result_path, np.asarray([average]), fmt='%.2f')
-        with open(result_path.replace('avg_fps.txt', 'avg_fps_list.json'), 'w') as file:
-            file.write(json.dumps(avg_fps_dict))
+        #     avg_fps = np.loadtxt(result_path)
+        #     avg_fps_dict['{}'.format(t)] = avg_fps.item()
+        # average = sum(avg_fps_dict.values()) / len(avg_fps_dict)
+        # avg_fps_dict['average'] = round(average, 2)
+        # np.savetxt(result_path, np.asarray([average]), fmt='%.2f')
+        # with open(result_path.replace('avg_fps.txt', 'avg_fps_list.json'), 'w') as file:
+        #     file.write(json.dumps(avg_fps_dict))
 
 # for sp in sp_list:
 #     for thresh in thresh_list:

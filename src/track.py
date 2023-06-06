@@ -155,6 +155,8 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     timer_calls = np.asarray(timer_calls)
     all_time = np.dot(timer_avgs, timer_calls)
     avg_time = all_time / np.sum(timer_calls)
+    if opt.is_profiling:
+        np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 
     # get summary
@@ -171,9 +173,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     opt = opts().init()
-
     if not opt.val_mot16:
         seqs_str = '''KITTI-13
                       KITTI-17
@@ -245,8 +245,7 @@ if __name__ == '__main__':
                       TUD-Stadtmitte
                       ADL-Rundle-6
                       ADL-Rundle-8
-                      ETH-Pedcross2
-                      TUD-Stadtmitte'''
+                      ETH-Pedcross2'''
         data_root = os.path.join(opt.data_dir, 'MOT15/images/train')
     if opt.val_mot20:
         seqs_str = '''MOT20-01
@@ -267,7 +266,7 @@ if __name__ == '__main__':
     main(opt,
          data_root=data_root,
          seqs=seqs,
-         exp_name='MOT17_test_public_dla34',
+         exp_name=opt.exp_id,
          show_image=False,
          save_images=False,
          save_videos=False)

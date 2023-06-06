@@ -14,7 +14,7 @@ half_mota = np.array([58.3, 56.8, 52.2, 50.4, 44.5])            # MOTA
 quarter_fps = np.array([42.6, 43.9, 45.6, 46.2, 46.5])               # FPS
 quarter_mota = np.array([52.6, 51.6, 46.5, 43.3, 37.7])            # MOTA
 
-DC_fps = np.array([40.0, 42.5, 43.1, 43.4, 44.2, 44.7, 45.6, 46.3])               # FPS
+DC_fps = np.array([40.0, 42.5, 43.1, 43.4, 44.0, 44.7, 46.1, 46.3])               # FPS
 DC_mota = np.array([63.7, 63.0, 60.7, 59.8, 57.8, 52.1, 47.4, 45.0])          # MOTA
 
 # Fit the quadratic functions

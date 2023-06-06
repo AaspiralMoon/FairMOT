@@ -10,20 +10,115 @@ import logging
 import argparse
 import motmetrics as mm
 import numpy as np
+import pandas as pd
 import torch
-
+import ast
+import matplotlib.pyplot as plt
 from tracker.multitracker import JDETracker
 from tracking_utils import visualization as vis
 from tracking_utils.log import logger
 from tracking_utils.timer import Timer
 from tracking_utils.evaluation import Evaluator
 import datasets.dataset.jde as datasets
-
+from models.decode import _nms
 from tracking_utils.utils import mkdir_if_missing
 from opts import opts
 
-# python track_half.py --task mot_multiknob --load_model ./model_last.pth
+# python track_half_multiknob.py --task mot_multiknob --load_model ../models/full-dla_34.pth --load_half_model ../exp/mot/mot17_half_half-dla34_with_pretrain/model_last.pth --load_quarter_model ../models/quarter-dla_34.pth --switch_period 30
 
+def heatmap_to_binary(heatmap, threshold):
+    binary = (heatmap > threshold).to(torch.float32)
+    return binary
+
+def hadamard_operation(A, B): # Element-wise Hadamard product
+    return A * B 
+
+def compare_hms(hm_knob):
+    det_rate_list = []
+    hm_knob = _nms(hm_knob)
+    hm_knob = heatmap_to_binary(hm_knob, 0.4)                  
+    hm_knob = hm_knob.squeeze(0)
+    for i in range(hm_knob.shape[0]):
+        det_rate_list.append(torch.div(torch.sum(hadamard_operation(hm_knob[0], hm_knob[i])), torch.sum(hm_knob[0])))
+    return det_rate_list
+
+def update_config(det_rate_list, threshold_config):             
+    # config_fps_sorted = [14, 11, 8, 13, 10, 7, 5, 12, 4, 9, 2, 6, 1, 3, 0]                      # for dla34
+    # if threshold_config == 'C1':
+    #     thresholds = [99, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    # if threshold_config == 'C2':
+    #     thresholds = [99, 0.99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
+    # if threshold_config == 'C3':
+    #     thresholds = [99, 99, 99, 99, 0.95, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
+    # if threshold_config == 'C4':
+    #     thresholds = [99, 99, 99, 99, 0.90, 0.90, 99, 0.90, 0.90, 0, 99, 99, 0.85, 99, 99]
+    # if threshold_config == 'C5':
+    #     thresholds = [99, 99, 99, 99, 99, 0.80, 99, 0.80, 0.90, 99, 0.90, 99, 0, 99, 99]
+    # if threshold_config == 'C6':
+    #     thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 99]
+    # if threshold_config == 'C7':
+    #     thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.60]
+    config_fps_sorted = [14, 11, 8, 13, 10, 5, 7, 12, 9, 4, 2, 6, 3, 1, 0]                        # for yolo
+    if threshold_config == 'C1':
+        thresholds = [99, 99, 99, 0.99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C2':
+        thresholds = [99, 99, 99, 0, 99, 99, 0.95, 99, 99, 0.99, 99, 99, 99, 99, 99]
+    if threshold_config == 'C3':
+        thresholds = [99, 99, 99, 99, 99, 99, 0, 99, 99, 0.85, 99, 99, 0.95, 99, 99]
+    if threshold_config == 'C4':
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 0.90, 99, 0.85, 99, 99]
+    if threshold_config == 'C5':
+        thresholds = [99, 99, 99, 99, 99, 0.85, 99, 99, 99, 99, 0.85, 99, 0, 99, 99]
+    if threshold_config == 'C6':
+        thresholds = [99, 99, 99, 99, 99, 0, 99, 99, 0.70, 99, 99, 0.70, 99, 99, 99]
+    if threshold_config == 'C7':
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.65, 99, 99, 0.65]
+    if threshold_config == 'C8':
+        thresholds = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 0, 99, 99, 0.50]
+    configs_candidates = [idx for idx, det_rate in enumerate(det_rate_list) if det_rate >= thresholds[idx]]
+    if len(configs_candidates) == 0:          # if no config satisfies the requirement, return the golden config
+        best_config_idx = 0
+    else:
+        best_config_idx = min((config_fps_sorted.index(candidates), candidates) for candidates in configs_candidates)[1]
+    return best_config_idx
+
+def plot_config_distribution(result_root, count_config, seq=None):
+    count_dict = {}
+    configs = []
+    imgsz_list = [1088, 864, 704, 640, 576]
+    model_list = ['full', 'half', 'quarter']
+    for imgsz in imgsz_list:
+        for m in model_list:
+            configs.append('{}_{}'.format(imgsz, m))
+    for config_idx in count_config:
+        if configs[config_idx] in count_dict:
+            count_dict[configs[config_idx]] += 1
+        else:
+            count_dict[configs[config_idx]] = 1
+    # plot and save the pie chart
+    labels = list(count_dict.keys())
+    sizes = list(count_dict.values())
+    colors = plt.cm.tab20(np.linspace(0, 1, len(configs)))
+    config_colors = {config: colors[i] for i, config in enumerate(configs)}
+    plt.rcParams.update({'font.size': 12})
+    wedges, texts, autotexts = plt.pie(
+        sizes, labels=labels, colors=[config_colors[label] for label in labels], autopct="%.1f%%", startangle=90, textprops=dict(color='w')
+    )
+    plt.axis('equal')
+    plt.legend(wedges, labels, title='Configurations', loc='lower right', bbox_to_anchor=(1.1, 0), fontsize=10)
+    if seq is None:
+        plt.title('Selected Configurations in ALL', fontsize=14)
+        plt.savefig(osp.join(result_root, 'config_distribution_all.png'), dpi=300, bbox_inches='tight')
+        df = pd.DataFrame(list(count_dict.items()), columns=['Configuration', 'Count'])
+        df.to_excel(osp.join(result_root, 'config_distribution_all.xlsx'), index=False)
+    else:
+        plt.title('Selected Configurations in Seq{}'.format(seq), fontsize=14)
+        plt.savefig(osp.join(result_root, 'config_distribution_{}.png'.format(seq)), dpi=300, bbox_inches='tight')
+        df = pd.DataFrame(list(count_dict.items()), columns=['Configuration', 'Count'])
+        df.to_excel(osp.join(result_root, 'config_distribution_{}.xlsx'.format(seq)), index=False)
+    plt.close()
+    plt.clf()
+            
 def write_results(filename, results, data_type):
     if data_type == 'mot':
         save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
@@ -46,43 +141,45 @@ def write_results(filename, results, data_type):
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
-
-def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30, gen_dir=None, interval=1):
+def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
+    imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+    model_list = ['full', 'half', 'quarter']
+    configs = []
+    for imgsz in imgsz_list:
+        for m in model_list:
+            configs.append('{}+{}'.format(imgsz, m))
     if save_dir:
         mkdir_if_missing(save_dir)
-    if gen_dir:
-        mkdir_if_missing(gen_dir)
     tracker = JDETracker(opt, frame_rate=frame_rate)
     timer = Timer()
     results = []
+    count_config = []
     len_all = len(dataloader)
     start_frame = int(len_all / 2)
     frame_id = int(len_all / 2)
+    best_config_idx = 0
     for i, (path, img, img0) in enumerate(dataloader):
         if i < start_frame:
             continue
-        if frame_id % interval != 0:
-            frame_id += 1
-            continue
-        if frame_id % 20 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
-
+        if (i - start_frame) % opt.switch_period == 0:
+            best_config_idx = 0
+        best_config = configs[best_config_idx]
+        best_imgsz, best_model = best_config.split('+')
+        dataloader.set_image_size(ast.literal_eval(best_imgsz))
+        path, img, img0 = dataloader.__getitem__(i)
+        blob = torch.from_numpy(img).cuda().unsqueeze(0)
+        count_config.append(best_config_idx)                                          # count the selected configuration for statistics
         # run tracking
         timer.tic()
-        blob = torch.from_numpy(img).cuda().unsqueeze(0)
+        if (i - start_frame) % opt.switch_period == 0:
+            print('Running switching...')
+            online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
+            det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
+            best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
+        else:
+            online_targets = tracker.update_hm(blob, img0, best_model)
 
-        if opt.gen_dets:
-            dets, online_targets = tracker.update(blob, img0)
-            with open(osp.join(gen_dir, '{}.txt'.format(frame_id + 1)), 'w+') as f:
-                np.savetxt(f, dets, '%.4f')
-        elif opt.gen_hm:
-            hm, online_targets = tracker.update(blob, img0)
-            torch.save(hm, osp.join(gen_dir, '{}.pth'.format(frame_id + 1)))
-            # with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
-            #     np.savetxt(f, hm.squeeze().cpu().numpy(), '%.4f')
-        else: 
-            online_targets = tracker.update(blob, img0)
-
+        print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id + 1)))
         online_tlwhs = []
         online_ids = []        
         #online_scores = []
@@ -97,10 +194,6 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.toc()
         # save results
         results.append((frame_id + 1, online_tlwhs, online_ids))
-        # if interval != 1:
-        #     for i in range(1, interval):
-        #         results.append((frame_id + 1 + i, online_tlwhs, online_ids))
-
         #results.append((frame_id + 1, online_tlwhs, online_ids, online_scores))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
@@ -113,12 +206,11 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     # save results
     write_results(result_filename, results, data_type)
     #write_results_score(result_filename, results, data_type)
-
-    return frame_id, timer.average_time, timer.calls
+    return frame_id, timer.average_time, timer.calls, count_config
 
 
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo',
-         save_images=False, save_videos=False, show_image=True, interval=1):
+         save_images=False, save_videos=False, show_image=True):
     logger.setLevel(logging.INFO)
     result_root = os.path.join(data_root, '..', 'results', exp_name)
     mkdir_if_missing(result_root)
@@ -128,26 +220,20 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     accs = []
     n_frame = 0
     timer_avgs, timer_calls = [], []
+    count_config_seqs = []
     for seq in seqs:
         output_dir = os.path.join(data_root, '..', 'outputs', exp_name, seq) if save_images or save_videos else None
         logger.info('start seq: {}'.format(seq))
-        if opt.qp != -1:
-            print('Loading dataset at QP={}'.format(opt.qp))
-            dataloader = datasets.LoadImages(osp.join('../../datasets/MOT17_multiknob', seq, 'QP_{}'.format(opt.qp), 'images'), opt.img_size)  # run tracking on the images at different QPs
-        else:
-            dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
+        dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-        if opt.gen_hm:
-            gen_dir = os.path.join(result_root, '{}_hm'.format(seq))
-        elif opt.gen_dets:
-            gen_dir = os.path.join(result_root, '{}_dets'.format(seq))
-        else:
-            gen_dir = None
 
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
-        nf, ta, tc = eval_seq(opt, dataloader, data_type, result_filename,
-                              save_dir=output_dir, show_image=show_image, frame_rate=frame_rate, gen_dir=gen_dir, interval=interval)
+        nf, ta, tc, count_config = eval_seq(opt, dataloader, data_type, result_filename,
+                                    save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
+        count_config_seqs += count_config                                                           # count the selected configurations over all seqs
+        plot_config_distribution(result_root, count_config, seq.split("-")[1])                      # plot and save the selected configuration distribution in each seq
+
         n_frame += nf
         timer_avgs.append(ta)
         timer_calls.append(tc)
@@ -165,7 +251,8 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     all_time = np.dot(timer_avgs, timer_calls)
     avg_time = all_time / np.sum(timer_calls)
     if opt.is_profiling:
-        np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')
+        np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
+    plot_config_distribution(result_root, count_config_seqs)                                         # plot and save the selected configuration distribution over all seqs
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 
     # get summary
@@ -254,7 +341,8 @@ if __name__ == '__main__':
                       TUD-Stadtmitte
                       ADL-Rundle-6
                       ADL-Rundle-8
-                      ETH-Pedcross2'''
+                      ETH-Pedcross2
+                      TUD-Stadtmitte'''
         data_root = os.path.join(opt.data_dir, 'MOT15/images/train')
     if opt.val_mot20:
         seqs_str = '''MOT20-01
@@ -278,5 +366,4 @@ if __name__ == '__main__':
          exp_name=opt.exp_id,
          show_image=False,
          save_images=False,
-         save_videos=False,
-         interval=opt.interval)
+         save_videos=False)
