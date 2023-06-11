@@ -14,13 +14,13 @@ for idx in imgsz_idx:
     for m in model_list:
         avg_fps_dict = {}
         for t in range(1, 2):
-            exp_id = '{}_{}_dla_hm'.format(imgsz_list[idx][0], m[:m.find('-')])
-            cmd_str = 'CUDA_VISIBLE_DEVICES=1 python track_half.py \
+            exp_id = '{}_{}_dla_dets'.format(imgsz_list[idx][0], m[:m.find('-')])
+            cmd_str = 'CUDA_VISIBLE_DEVICES=0 python track_half.py \
                         --task mot \
                         --exp_id {} \
-                        --load_model ../models/{}.pth \
+                        --load_model ../models/baselines/{}.pth \
                         --arch {} \
-                        --gen_hm \
+                        --gen_dets \
                         --imgsize_index {}'.format(exp_id, m, m, idx)
             os.system(cmd_str)
             result_path = osp.join(result_root, exp_id, 'avg_fps.txt')

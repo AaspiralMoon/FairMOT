@@ -8,10 +8,18 @@ def mkdirs(d):
         os.makedirs(d)
 
 
-seq_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT16/images/train'
-label_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT16/labels_with_ids/train'
+seq_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train'
+label_root = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results/MOT17_gt'
 mkdirs(label_root)
-seqs = [s for s in os.listdir(seq_root)]
+# seqs = [s for s in os.listdir(seq_root)]
+
+seqs = ['MOT17-02-SDP',
+        'MOT17-04-SDP',
+        'MOT17-05-SDP',
+        'MOT17-09-SDP',
+        'MOT17-10-SDP',
+        'MOT17-11-SDP',
+        'MOT17-13-SDP']
 
 tid_curr = 0
 tid_last = -1
@@ -23,7 +31,7 @@ for seq in seqs:
     gt_txt = osp.join(seq_root, seq, 'gt', 'gt.txt')
     gt = np.loadtxt(gt_txt, dtype=np.float64, delimiter=',')
 
-    seq_label_root = osp.join(label_root, seq, 'img1')
+    seq_label_root = osp.join(label_root, seq)
     mkdirs(seq_label_root)
 
     for fid, tid, x, y, w, h, mark, label, _ in gt:
@@ -34,10 +42,11 @@ for seq in seqs:
         if not tid == tid_last:
             tid_curr += 1
             tid_last = tid
-        x += w / 2
-        y += h / 2
+        x1 = x 
+        y1 = y 
+        x2 = x + w
+        y2 = y + h
         label_fpath = osp.join(seq_label_root, '{:06d}.txt'.format(fid))
-        label_str = '0 {:d} {:.6f} {:.6f} {:.6f} {:.6f}\n'.format(
-            tid_curr, x / seq_width, y / seq_height, w / seq_width, h / seq_height)
+        label_str = '{:.1f} {:.1f} {:.1f} {:.1f}\n'.format(x1, y1, x2, y2)
         with open(label_fpath, 'a') as f:
             f.write(label_str)

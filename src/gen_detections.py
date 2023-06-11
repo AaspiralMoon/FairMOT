@@ -41,7 +41,7 @@ def eval_seq(opt, dataloader, output_root):
 
         if opt.gen_dets:
             dets, online_targets = tracker.update(blob, img0)
-            with open(osp.join(output_root, '{}.txt'.format(int(i+1))), 'w+') as f:
+            with open(osp.join(output_root, '{:06d}.txt'.format(int(i+1))), 'w+') as f:
                 np.savetxt(f, dets, '%.4f')
 
 

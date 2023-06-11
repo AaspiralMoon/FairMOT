@@ -73,11 +73,11 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 
         if opt.gen_dets:
             dets, online_targets = tracker.update(blob, img0)
-            with open(osp.join(gen_dir, '{}.txt'.format(frame_id + 1)), 'w+') as f:
+            with open(osp.join(gen_dir, '{:06d}.txt'.format(frame_id + 1)), 'w+') as f:
                 np.savetxt(f, dets, '%.4f')
         elif opt.gen_hm:
             hm, online_targets = tracker.update(blob, img0)
-            torch.save(hm, osp.join(gen_dir, '{}.pth'.format(frame_id + 1)))
+            torch.save(hm, osp.join(gen_dir, '{:06d}.pth'.format(frame_id + 1)))
             # with open(osp.join(gen_dir, '{}.txt'.format(frame_id)), 'w+') as f:
             #     np.savetxt(f, hm.squeeze().cpu().numpy(), '%.4f')
         else: 
