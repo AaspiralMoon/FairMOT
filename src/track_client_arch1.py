@@ -1,7 +1,7 @@
 # This script is for tracking on the client
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: python track_client_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
+# Command: python3 track_client_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
 
 from __future__ import absolute_import
 from __future__ import division

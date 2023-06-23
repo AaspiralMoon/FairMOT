@@ -11,9 +11,9 @@ import _init_paths
 import os
 import os.path as osp
 import time
+import cv2
 import torch
 import logging
-import cv2
 
 from tracking_utils.log import logger
 from tracker.multitracker import JDETracker
