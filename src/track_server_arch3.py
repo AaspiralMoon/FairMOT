@@ -30,7 +30,7 @@ from track_half_multiknob import compare_hms, update_config
 def main(opt, server, data_root, seqs):
     logger.setLevel(logging.INFO)
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    model_list = ['full', 'half', 'quarter']
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -106,20 +106,23 @@ def main(opt, server, data_root, seqs):
                 print('Unknown data type: {}'.format(data_type))
                 continue
                     
-            if frame_id is not None and img0 is not None:       
-                img0 = cv2.imdecode(img0, 1)  
+            if frame_id is not None and img0 is not None:
+                start_server_decoding = time.time()
+                img0 = cv2.imdecode(img0, 1)
+                end_server_decoding = time.time()
+                total_server_time += (end_server_decoding - start_server_decoding)
                 img = pre_processing(img0)         
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 print('Running switching...')
                 start_server_computation = time.time()                 # start time for server computation
-                hm_knob, dets, id_feature = tracker.update_hm(blob, img0, 'full-dla_34-multiknob', do_object_association=False)
+                hm_knob, dets, id_feature = tracker.update_hm(blob, img0, 'full-multiknob', do_object_association=False)
                 det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
                 best_config_idx = update_config(det_rate_list, opt.threshold_config)
                 end_server_computation = time.time()                   # end time for server computation
                 total_server_time += (end_server_computation - start_server_computation)
                 best_config = configs[best_config_idx]
                 best_imgsz, best_model = best_config.split('+')
-                print('Running imgsz: (1088, 608) model: full-dla_34 on image: {}'.format(str(frame_id)))
+                print('Running imgsz: (1088, 608) model: full on image: {}'.format(str(frame_id)))
                 best_config_info = {'best_imgsz': ast.literal_eval(best_imgsz), 'best_model': best_model, 'dets': dets, 'id_feature': id_feature}
                 start_communication = time.time()
                 data_size = server.send(best_config_info)

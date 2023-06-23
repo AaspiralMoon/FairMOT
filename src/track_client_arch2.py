@@ -32,10 +32,10 @@ def main(opt, client, data_root, seqs):
             if i < start_frame:
                 continue
             if (i - start_frame) % opt.switch_period == 0:
-                start_encoding = time.time()
+                start_client_encoding = time.time()
                 _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
-                end_encoding = time.time()
-                total_client_time += (end_encoding - start_encoding)
+                end_client_encoding = time.time()
+                total_client_time += (end_client_encoding - start_client_encoding)
                 img_info = {'frame_id': int(i + 1), 'img0': img0}
                 start_communication = time.time()
                 client.send(('original_img', img_info))
@@ -46,10 +46,10 @@ def main(opt, client, data_root, seqs):
                     best_imgsz = received_data['best_imgsz']
             else:
                 img = pre_processing(img0, best_imgsz, do_letterbox=True, do_transformation=False)
-                start_encoding = time.time()
+                start_client_encoding = time.time()
                 _, img = cv2.imencode('.jpg', img, encode_param)        # encoding
-                end_encoding = time.time()
-                total_client_time += (end_encoding - start_encoding)
+                end_client_encoding = time.time()
+                total_client_time += (end_client_encoding - start_client_encoding)
                 img_info = {'frame_id': int(i + 1), 'img': img}
                 start_communication = time.time()
                 client.send(('scaled_img', img_info))

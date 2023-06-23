@@ -1,7 +1,7 @@
 # This script is for tracking on the server
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: python track_server.py
+# Command: CUDA_VISIBLE_DEVICES=3 python track_server_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
 
 from __future__ import absolute_import
 from __future__ import division
@@ -35,7 +35,7 @@ from track_half_multiknob import compare_hms, update_config
 def main(opt, server, data_root, seqs):
     logger.setLevel(logging.INFO)
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-    model_list = ['full-dla_34', 'half-dla_34', 'quarter-dla_34']
+    model_list = ['full', 'half', 'quarter']
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -111,17 +111,20 @@ def main(opt, server, data_root, seqs):
                 best_config = configs[best_config_idx]
                 best_imgsz, best_model = best_config.split('+')
 
+                start_server_decoding = time.time()
                 img0 = cv2.imdecode(img0, 1)
+                end_server_decoding = time.time()
+                total_server_time += (end_server_decoding - start_server_decoding)
                 img = pre_processing(img0, ast.literal_eval(best_imgsz))              
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 start_server_computation = time.time()                  # start time for server computation
                 if (frame_id - 1 - start_frame) % opt.switch_period == 0:
                     print('Running switching...')
-                    online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-dla_34-multiknob')
+                    online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
                     det_rate_list = compare_hms(hm_knob)
                     best_config_idx = update_config(det_rate_list, opt.threshold_config)
                 else:
-                    online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
+                    online_targets = tracker.update_hm(blob, img0, best_model)
                 end_server_computation = time.time()                   # end time for server computation
                 total_server_time += (end_server_computation - start_server_computation)
                 num_frames += 1

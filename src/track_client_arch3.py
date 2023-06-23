@@ -41,10 +41,10 @@ def main(opt, client, data_root, seqs):
                 continue
             num_frames += 1
             if (i - start_frame) % opt.switch_period == 0:
-                start_encoding = time.time()
+                start_client_encoding = time.time()
                 _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
-                end_encoding = time.time()
-                total_client_time += (end_encoding - start_encoding)
+                end_client_encoding = time.time()
+                total_client_time += (end_client_encoding - start_client_encoding)
                 img_info = {'frame_id': int(i + 1), 'img0': img0}
                 start_communication = time.time()
                 client.send(('original_img', img_info))
@@ -64,7 +64,7 @@ def main(opt, client, data_root, seqs):
                 img = pre_processing(img0, best_imgsz)
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 start_client_computation = time.time()
-                online_targets, _, _ = tracker.update_hm(blob, img0, best_model)
+                online_targets = tracker.update_hm(blob, img0, best_model)
                 end_client_computation = time.time()
                 total_client_time += (end_client_computation - start_client_computation)
                 print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i + 1)))

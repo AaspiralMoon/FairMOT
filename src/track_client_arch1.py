@@ -1,7 +1,7 @@
 # This script is for tracking on the client
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: python track_client.py
+# Command: python track_client_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
 
 from __future__ import absolute_import
 from __future__ import division
@@ -98,10 +98,10 @@ def main(opt, client, data_root, seqs):
         for i, (path, img, img0) in enumerate(dataloader):
             if i < start_frame:
                 continue
-            start_encoding = time.time()
+            start_client_encoding = time.time()
             _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
-            end_encoding = time.time()
-            total_client_time += (end_encoding - start_encoding)
+            end_client_encoding = time.time()
+            total_client_time += (end_client_encoding - start_client_encoding)
             img_info = {'frame_id': int(i + 1), 'img0': img0}
             start_communication = time.time()
             client.send(('original_img', img_info))
