@@ -52,14 +52,16 @@ def main(opt, server, data_root, seqs):
             if data_type == 'dataset_info':
                 dataset_info = data
                 seq = dataset_info['seq']
+                img0_width = dataset_info['img0_width']
+                img0_height = dataset_info['img0_height']
                 frame_rate = dataset_info['frame_rate']
                 tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
 
-            elif data_type == 'original_img':
+            elif data_type == 'full_img':
                 img_info = data
                 frame_id = img_info['frame_id']
-                img0 = img_info['img0']
+                img = img_info['img']
                 total_data_size += msg_size
 
             elif data_type == 'results_info':
@@ -106,16 +108,16 @@ def main(opt, server, data_root, seqs):
                 print('Unknown data type: {}'.format(data_type))
                 continue
                     
-            if frame_id is not None and img0 is not None:
+            if frame_id is not None and img is not None:
                 start_server_decoding = time.time()
-                img0 = cv2.imdecode(img0, 1)
+                img = cv2.imdecode(img, 1)
                 end_server_decoding = time.time()
                 total_server_time += (end_server_decoding - start_server_decoding)
-                img = pre_processing(img0)         
+                img = pre_processing(img, do_letterbox=False, do_transformation=True)       
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 print('Running switching...')
                 start_server_computation = time.time()                 # start time for server computation
-                hm_knob, dets, id_feature = tracker.update_hm(blob, img0, 'full-multiknob', do_object_association=False)
+                hm_knob, dets, id_feature = tracker.update_hm_client_server(blob, img0_width, img0_height, model_id='full-multiknob', do_object_association=False)
                 det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
                 best_config_idx = update_config(det_rate_list, opt.threshold_config)
                 end_server_computation = time.time()                   # end time for server computation

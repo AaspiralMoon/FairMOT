@@ -57,6 +57,8 @@ def main(opt, server, data_root, seqs):
             if data_type == 'dataset_info':
                 dataset_info = data
                 seq = dataset_info['seq']
+                img0_width = dataset_info['img0_width']
+                img0_height = dataset_info['img0_height']
                 frame_rate = dataset_info['frame_rate']
                 start_frame = dataset_info['start_frame']
                 last_frame = dataset_info['last_frame']
@@ -65,10 +67,10 @@ def main(opt, server, data_root, seqs):
                 tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
 
-            elif data_type == 'original_img':
+            elif data_type == 'full_img':
                 img_info = data
                 frame_id = img_info['frame_id']
-                img0 = img_info['img0']
+                img = img_info['img']
                 total_data_size += msg_size
 
             elif data_type == 'terminate':
@@ -105,14 +107,14 @@ def main(opt, server, data_root, seqs):
                 print('Unknown data type: {}'.format(data_type))
                 continue
                 
-            if frame_id is not None and img0 is not None:
+            if frame_id is not None and img is not None:
                 if (frame_id - 1 - start_frame) % opt.switch_period == 0:
                     best_config_idx = 0
                 best_config = configs[best_config_idx]
                 best_imgsz, best_model = best_config.split('+')
 
                 start_server_decoding = time.time()
-                img0 = cv2.imdecode(img0, 1)
+                img = cv2.imdecode(img, 1)
                 end_server_decoding = time.time()
                 total_server_time += (end_server_decoding - start_server_decoding)
                 img = pre_processing(img0, ast.literal_eval(best_imgsz))              

@@ -130,5 +130,20 @@ import cv2
 # # Save the plot as an image
 # plt.savefig('pareto_front.png', dpi=300)
 
-hm_300 = torch.load('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results/1088_full_dla_hm/MOT17-02-SDP_hm/300.pth')
-print(hm_300.shape)
+# hm_300 = torch.load('/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/results/1088_full_dla_hm/MOT17-02-SDP_hm/300.pth')
+# print(hm_300.shape)
+
+
+# Load the image from a file
+image_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train/MOT17-13-SDP/img1/000001.jpg'
+img = cv2.imread(image_path)
+
+# Check the size of the image file on disk
+disk_size = os.path.getsize(image_path)
+
+# Check the size of the image in memory
+# The image is a numpy array, so we can use numpy's 'nbytes' property
+memory_size = img.nbytes
+
+print(f'Size of the image on disk: {disk_size} bytes')
+print(f'Size of the image in memory: {memory_size} bytes')

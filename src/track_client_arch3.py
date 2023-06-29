@@ -30,10 +30,12 @@ def main(opt, client, data_root, seqs):
     for seq in seqs:
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
+        img0_width = int(meta_info[meta_info.find('imWidth=') + 8:meta_info.find('\nimHeight')])
+        img0_height = int(meta_info[meta_info.find('imHeight=') + 9:meta_info.find('\nimExt')])
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         tracker = JDETracker(opt, frame_rate=frame_rate)
         start_frame = int(len(dataloader) / 2)
-        dataset_info = {'seq': seq, 'frame_rate': frame_rate}
+        dataset_info = {'seq': seq, 'img0_width': img0_width, 'img0_height': img0_height, 'frame_rate': frame_rate}
         client.send(('dataset_info', dataset_info))
         results = []
         for i, (path, img, img0) in enumerate(dataloader):
@@ -41,13 +43,14 @@ def main(opt, client, data_root, seqs):
                 continue
             num_frames += 1
             if (i - start_frame) % opt.switch_period == 0:
+                img = pre_processing(img0, do_letterbox=True, do_transformation=False)                                        # full resolution
                 start_client_encoding = time.time()
-                _, img0 = cv2.imencode('.jpg', img0, encode_param)        # encoding
+                _, img = cv2.imencode('.jpg', img, encode_param)        # encoding
                 end_client_encoding = time.time()
                 total_client_time += (end_client_encoding - start_client_encoding)
-                img_info = {'frame_id': int(i + 1), 'img0': img0}
+                img_info = {'frame_id': int(i + 1), 'img': img}
                 start_communication = time.time()
-                client.send(('original_img', img_info))
+                client.send(('full_img', img_info))
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
                 received_data, _ = client.receive()

@@ -54,6 +54,8 @@ def main(opt, server, data_root, seqs):
             if data_type == 'dataset_info':
                 dataset_info = data
                 seq = dataset_info['seq']
+                img0_width = dataset_info['img0_width']
+                img0_height = dataset_info['img0_height']
                 frame_rate = dataset_info['frame_rate']
                 start_frame = dataset_info['start_frame']
                 last_frame = dataset_info['last_frame']
@@ -61,12 +63,6 @@ def main(opt, server, data_root, seqs):
                 result_filename = os.path.join(result_root, '{}.txt'.format(seq))
                 tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
-
-            elif data_type == 'original_img':
-                img_info = data
-                frame_id = img_info['frame_id']
-                img0 = img_info['img0']
-                total_data_size += msg_size
 
             elif data_type == 'scaled_img':
                 img_info = data
@@ -108,17 +104,17 @@ def main(opt, server, data_root, seqs):
                 print('Unknown data type: {}'.format(data_type))
                 continue
 
-            if (frame_id is not None and img0 is not None) or (frame_id is not None and img is not None):           
+            if (frame_id is not None and img is not None):
                 if (frame_id - 1 - start_frame) % opt.switch_period == 0:
                     start_server_decoding = time.time()
-                    img0 = cv2.imdecode(img0, 1)
+                    img = cv2.imdecode(img, 1)
                     end_server_decoding = time.time()
                     total_server_time += (end_server_decoding - start_server_decoding)
-                    img = pre_processing(img0)         
+                    img = pre_processing(img, do_letterbox=False, do_transformation=True) 
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
                     print('Running switching...')
                     start_server_computation = time.time()                 # start time for server computation
-                    online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
+                    online_targets, hm_knob = tracker.update_hm_client_server(blob, img0_width, img0_height, model_id='full-multiknob')
                     det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
                     best_config_idx = update_config(det_rate_list, opt.threshold_config)
                     end_server_computation = time.time()                   # end time for server computation
@@ -140,7 +136,7 @@ def main(opt, server, data_root, seqs):
                     img = pre_processing(img, do_letterbox=False, do_transformation=True)
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
                     start_server_computation = time.time()                 # start time for server computation
-                    online_targets = tracker.update_hm(blob, img0, best_model)             
+                    online_targets = tracker.update_hm_client_server(blob, img0_width, img0_height, best_model)             
                     end_server_computation = time.time()                   # end time for server computation
                     total_server_time += (end_server_computation - start_server_computation)
                     print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id)))
