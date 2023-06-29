@@ -27,8 +27,12 @@ should always use 1,1,0 for gt and results
 
 # measure bandwidth
 server: iperf3 -s -p 8223
-client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1        (download)
-client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1 -R     (upload)
+client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1        (upload)
+client: iperf3 -c 130.113.68.165 -p 8223 -t 600 -i 1 -R     (download)
 
 # measure average round-trip latency
 ping -c 1000 130.113.68.165
+
+# check port usage:
+lsof -i :8223
+kill pid
