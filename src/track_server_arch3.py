@@ -58,7 +58,7 @@ def main(opt, server, data_root, seqs):
                 tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
 
-            elif data_type == 'full_img':
+            elif data_type == 'img':
                 img_info = data
                 frame_id = img_info['frame_id']
                 img = img_info['img']
@@ -117,7 +117,7 @@ def main(opt, server, data_root, seqs):
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 print('Running switching...')
                 start_server_computation = time.time()                 # start time for server computation
-                hm_knob, dets, id_feature = tracker.update_hm_client_server(blob, img0_width, img0_height, model_id='full-multiknob', do_object_association=False)
+                hm_knob, dets, id_feature = tracker.update_hm(blob, model_id='full-multiknob', do_object_association=False, img0_width=img0_width, img0_height=img0_height)
                 det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
                 best_config_idx = update_config(det_rate_list, opt.threshold_config)
                 end_server_computation = time.time()                   # end time for server computation

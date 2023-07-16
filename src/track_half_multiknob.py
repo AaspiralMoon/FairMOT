@@ -173,11 +173,11 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
         timer.tic()
         if (i - start_frame) % opt.switch_period == 0:
             print('Running switching...')
-            online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
+            online_targets, hm_knob = tracker.update_hm(blob, img0, model_id='full-multiknob')
             det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
             best_config_idx = update_config(det_rate_list, opt.threshold_config)      # determine the optimal configuration based on the rule
         else:
-            online_targets = tracker.update_hm(blob, img0, best_model)
+            online_targets = tracker.update_hm(blob, img0, model_id=best_model)
 
         print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id + 1)))
         online_tlwhs = []
@@ -250,8 +250,8 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     timer_calls = np.asarray(timer_calls)
     all_time = np.dot(timer_avgs, timer_calls)
     avg_time = all_time / np.sum(timer_calls)
-    # if opt.is_profiling:
-    #     np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
+    if opt.is_profiling:
+        np.savetxt(osp.join(result_root, 'avg_fps.txt'), 1.0 / np.asarray([avg_time]), fmt='%.2f')   # save the profile (average fps)
     plot_config_distribution(result_root, count_config_seqs)                                         # plot and save the selected configuration distribution over all seqs
     logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 

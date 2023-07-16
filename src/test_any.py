@@ -1,6 +1,9 @@
 # this script is for testing any code
 # Author: Renjie Xu
 # Time: 2023/2/22
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import _init_paths
 import torch
@@ -13,6 +16,10 @@ import time
 import matplotlib.pyplot as plt
 import cv2
 
+import datasets.dataset.jde as datasets
+from opts import opts
+from datasets.dataset.jde import letterbox
+from track_client_arch1 import pre_processing
 # detection_result_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17_multiknob/results'
 # save_path = '/nfs/u40/xur86/projects/DeepScale/FairMOT/exp/mot_multiknob/verify_labels/verify_detections'
 
@@ -138,12 +145,18 @@ import cv2
 image_path = '/nfs/u40/xur86/projects/DeepScale/datasets/MOT17/images/train/MOT17-13-SDP/img1/000001.jpg'
 img = cv2.imread(image_path)
 
-# Check the size of the image file on disk
-disk_size = os.path.getsize(image_path)
+# # Check the size of the image file on disk
+# disk_size = os.path.getsize(image_path)
 
-# Check the size of the image in memory
-# The image is a numpy array, so we can use numpy's 'nbytes' property
-memory_size = img.nbytes
+# # Check the size of the image in memory
+# # The image is a numpy array, so we can use numpy's 'nbytes' property
+# memory_size = img.nbytes
 
-print(f'Size of the image on disk: {disk_size} bytes')
-print(f'Size of the image in memory: {memory_size} bytes')
+# print(f'Size of the image on disk: {disk_size} bytes')
+# print(f'Size of the image in memory: {memory_size} bytes')
+
+start_resizing = time.time()
+img = pre_processing(img, do_letterbox=True, do_transformation=False)
+end_resizing = time.time()
+resizing_cost = end_resizing - start_resizing
+print(resizing_cost*1000)

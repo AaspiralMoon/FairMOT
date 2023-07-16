@@ -1,7 +1,7 @@
 # This script is for tracking on the client
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: python3 track_client_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
+# Command: python3 track_client_arch1.py --exp_id jetson_A1_Quarter_640_wifi_5Mbps_97_encoding --task mot --load_model ../models/baselines/quarter-yolo.pth --arch quarter-yolo --reid_dim 64 --imgsize_index 3
 
 from __future__ import absolute_import
 from __future__ import division
@@ -95,19 +95,19 @@ def main(opt, client, data_root, seqs):
         img0_height = int(meta_info[meta_info.find('imHeight=') + 9:meta_info.find('\nimExt')])
         frame_rate = int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
         start_frame = int(len(dataloader) / 2)
-        dataset_info = {'seq': seq, 'img0_width': img0_width, 'img0_height': img0_height, 'frame_rate': frame_rate, 'start_frame': start_frame, 'last_frame': len(dataloader)}
+        dataset_info = {'seq': seq, 'img0_width': img0_width, 'img0_height': img0_height, 'frame_rate': frame_rate, 'last_frame': len(dataloader)}
         client.send(('dataset_info', dataset_info))
         for i, (path, img, img0) in enumerate(dataloader):
             if i < start_frame:
                 continue
-            img = pre_processing(img0, do_letterbox=True, do_transformation=False)                                        # full resolution
+            img = pre_processing(img0, img_size=opt.img_size, do_letterbox=True, do_transformation=False)                                        # full resolution
             start_client_encoding = time.time()
             _, img = cv2.imencode('.jpg', img, encode_param)        # encoding
             end_client_encoding = time.time()
             total_client_time += (end_client_encoding - start_client_encoding)
             img_info = {'frame_id': int(i + 1), 'img': img}
             start_communication = time.time()
-            client.send(('full_img', img_info))
+            client.send(('img', img_info))
             end_communication = time.time()
             total_communication_time += (end_communication - start_communication)
     time_info = {'total_communication_time': total_communication_time, 'total_client_time': total_client_time}

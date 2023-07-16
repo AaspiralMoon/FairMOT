@@ -10,28 +10,28 @@ from __future__ import print_function
 import _init_paths
 import os
 import os.path as osp
-import cv2
 import logging
 import motmetrics as mm
 import torch
 import ast
 import time
 import json
+import cv2
 
 from tracker.multitracker import JDETracker
 from tracking_utils.log import logger
-from tracking_utils.evaluation import Evaluator
 from tracking_utils.utils import mkdir_if_missing
+from tracking_utils.evaluation import Evaluator
 from opts import opts
-from track_client_arch1 import Client, pre_processing
 from track_half import write_results
+from track_client_arch1 import Client, pre_processing
 from track_half_multiknob import compare_hms, update_config
-
 
 def main(opt, server, data_root, seqs):
     logger.setLevel(logging.INFO)
     imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
     model_list = ['full', 'half', 'quarter']
+    transfer_config_list = [0]                            # if the best config is in this list, do computation on camera
     configs = []
     for imgsz in imgsz_list:
         for m in model_list:
@@ -43,39 +43,48 @@ def main(opt, server, data_root, seqs):
     accs = []
     total_server_time = 0
     total_communication_time = 0
-    num_frames = 0
     total_data_size = 0
 
     while True:
         received_data, msg_size = server.receive()
         if received_data:
             data_type, data = received_data
+
             if data_type == 'dataset_info':
                 dataset_info = data
                 seq = dataset_info['seq']
                 img0_width = dataset_info['img0_width']
                 img0_height = dataset_info['img0_height']
                 frame_rate = dataset_info['frame_rate']
-                start_frame = dataset_info['start_frame']
-                last_frame = dataset_info['last_frame']
+                tracker = JDETracker(opt, frame_rate=frame_rate)
                 results = []
                 result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-                tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
 
             elif data_type == 'img':
                 img_info = data
                 frame_id = img_info['frame_id']
                 img = img_info['img']
+                task = img_info['task']
                 total_data_size += msg_size
+
+            elif data_type == 'results_info':
+                results_info = data
+                client_results = results_info['client_results']
+                results = results + client_results
+                write_results(result_filename, results, data_type='mot')
+                evaluator = Evaluator(data_root, seq, data_type='mot')
+                accs.append(evaluator.eval_file(result_filename))
+                continue
 
             elif data_type == 'terminate':
                 time_info = data
 
                 total_communication_time += time_info['total_communication_time']
                 total_client_time = time_info['total_client_time']
-                
-                avg_communication_time = round(total_communication_time * 1000 / num_frames, 1)
+                num_frames = time_info['num_frames']
+
+                avg_communication_time = round(total_communication_time * 1000 / num_frames, 10)
                 avg_client_time = round(total_client_time * 1000 / num_frames, 1)
                 avg_server_time = round(total_server_time * 1000 / num_frames, 1)
                 avg_fps = round(num_frames / (total_communication_time + total_client_time + total_server_time), 1)
@@ -84,8 +93,8 @@ def main(opt, server, data_root, seqs):
                 avg_time_info = {'avg_fps': avg_fps, 'avg_server_time': avg_server_time, 'avg_client_time': avg_client_time, 'avg_communication_time': avg_communication_time, 'avg_network_traffic': avg_network_traffic}
                 with open(osp.join(result_root, 'avg_time_info.json'), 'w') as file:
                     file.write(json.dumps(avg_time_info))
-
-                # evaluate MOTA   
+                
+                # evaluate MOTA  
                 metrics = mm.metrics.motchallenge_metrics
                 mh = mm.metrics.create()
                 summary = Evaluator.get_summary(accs, seqs, metrics)
@@ -102,15 +111,15 @@ def main(opt, server, data_root, seqs):
             else:
                 print('Unknown data type: {}'.format(data_type))
                 continue
-
-            if (frame_id is not None and img is not None):
-                if (frame_id - 1 - start_frame) % opt.switch_period == 0:
-                    start_server_decoding = time.time()
-                    img = cv2.imdecode(img, 1)
-                    end_server_decoding = time.time()
-                    total_server_time += (end_server_decoding - start_server_decoding)
-                    img = pre_processing(img, do_letterbox=False, do_transformation=True) 
-                    blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                    
+            if frame_id is not None and img is not None:
+                start_server_decoding = time.time()
+                img = cv2.imdecode(img, 1)
+                end_server_decoding = time.time()
+                total_server_time += (end_server_decoding - start_server_decoding)
+                img = pre_processing(img, do_letterbox=False, do_transformation=True)       
+                blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                if task == 'multiknob':
                     print('Running switching...')
                     start_server_computation = time.time()                 # start time for server computation
                     online_targets, hm_knob = tracker.update_hm(blob, model_id='full-multiknob', img0_width=img0_width, img0_height=img0_height)
@@ -121,34 +130,22 @@ def main(opt, server, data_root, seqs):
                     best_config = configs[best_config_idx]
                     best_imgsz, best_model = best_config.split('+')
                     print('Running imgsz: (1088, 608) model: full on image: {}'.format(str(frame_id)))
-                    best_config_info = {'best_imgsz': ast.literal_eval(best_imgsz), 'best_model': best_model}
+                    do_transfer = best_config_idx in transfer_config_list          # determine if transfer
+                    best_config_info = {'best_imgsz': ast.literal_eval(best_imgsz), 'best_model': best_model, 'do_transfer': do_transfer}
                     start_communication = time.time()
                     data_size = server.send(best_config_info)
                     end_communication = time.time()
                     total_data_size += data_size
                     total_communication_time += (end_communication - start_communication)
-                else:
-                    start_server_decoding = time.time()
-                    img = cv2.imdecode(img, 1)
-                    end_server_decoding = time.time()
-                    total_server_time += (end_server_decoding - start_server_decoding)
-                    img = pre_processing(img, do_letterbox=False, do_transformation=True)
-                    blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                elif task == 'regular':
                     start_server_computation = time.time()                 # start time for server computation
                     online_targets = tracker.update_hm(blob, model_id=best_model, img0_width=img0_width, img0_height=img0_height)      
                     end_server_computation = time.time()                   # end time for server computation
                     total_server_time += (end_server_computation - start_server_computation)
                     print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id)))
-
-                num_frames += 1
                 online_tlwhs = [t.tlwh for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 online_ids = [t.track_id for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 results.append((frame_id, online_tlwhs, online_ids))
-
-            if frame_id == last_frame:
-                write_results(result_filename, results, data_type='mot')
-                evaluator = Evaluator(data_root, seq, data_type='mot')
-                accs.append(evaluator.eval_file(result_filename))
 
 if __name__ == "__main__":
     server = Client(server_address='130.113.68.165', port=8223, is_client=False)

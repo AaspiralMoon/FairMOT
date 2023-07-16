@@ -50,7 +50,7 @@ def main(opt, client, data_root, seqs):
                 total_client_time += (end_client_encoding - start_client_encoding)
                 img_info = {'frame_id': int(i + 1), 'img': img}
                 start_communication = time.time()
-                client.send(('full_img', img_info))
+                client.send(('img', img_info))
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
                 received_data, _ = client.receive()

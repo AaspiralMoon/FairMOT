@@ -1,7 +1,7 @@
 # This script is for tracking on the server
 # Author: Renjie Xu
 # Time: 2023/5/6
-# Command: CUDA_VISIBLE_DEVICES=3 python track_server_arch1.py --exp_id XX --task mot_multiknob --load_model ../models/full-yolo-multiknob.pth --load_full_model ../models/full-yolo.pth --load_half_model ../models/half-yolo.pth --load_quarter_model ../models/quarter-yolo.pth --arch full-yolo --reid_dim 64 --switch_period 40 --threshold_config C1
+# Command: CUDA_VISIBLE_DEVICES=3 python track_server_arch1.py --exp_id jetson_A1_Quarter_640_wifi_5Mbps_97_encoding --task mot --load_model ../models/baselines/quarter-yolo.pth --arch quarter-yolo --reid_dim 64 --imgsize_index 3
 
 from __future__ import absolute_import
 from __future__ import division
@@ -34,13 +34,6 @@ from track_half_multiknob import compare_hms, update_config
 
 def main(opt, server, data_root, seqs):
     logger.setLevel(logging.INFO)
-    imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
-    model_list = ['full', 'half', 'quarter']
-    configs = []
-    for imgsz in imgsz_list:
-        for m in model_list:
-            configs.append('{}+{}'.format(imgsz, m))
-
     result_root = os.path.join(data_root, '..', 'results', opt.exp_id)
     mkdir_if_missing(result_root)
 
@@ -60,14 +53,13 @@ def main(opt, server, data_root, seqs):
                 img0_width = dataset_info['img0_width']
                 img0_height = dataset_info['img0_height']
                 frame_rate = dataset_info['frame_rate']
-                start_frame = dataset_info['start_frame']
                 last_frame = dataset_info['last_frame']
                 results = []
                 result_filename = os.path.join(result_root, '{}.txt'.format(seq))
                 tracker = JDETracker(opt, frame_rate=frame_rate)
                 continue
 
-            elif data_type == 'full_img':
+            elif data_type == 'img':
                 img_info = data
                 frame_id = img_info['frame_id']
                 img = img_info['img']
@@ -108,29 +100,18 @@ def main(opt, server, data_root, seqs):
                 continue
                 
             if frame_id is not None and img is not None:
-                if (frame_id - 1 - start_frame) % opt.switch_period == 0:
-                    best_config_idx = 0
-                best_config = configs[best_config_idx]
-                best_imgsz, best_model = best_config.split('+')
-
                 start_server_decoding = time.time()
                 img = cv2.imdecode(img, 1)
                 end_server_decoding = time.time()
                 total_server_time += (end_server_decoding - start_server_decoding)
-                img = pre_processing(img0, ast.literal_eval(best_imgsz))              
+                img = pre_processing(img, do_letterbox=False, do_transformation=True)                
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 start_server_computation = time.time()                  # start time for server computation
-                if (frame_id - 1 - start_frame) % opt.switch_period == 0:
-                    print('Running switching...')
-                    online_targets, hm_knob = tracker.update_hm(blob, img0, 'full-multiknob')
-                    det_rate_list = compare_hms(hm_knob)
-                    best_config_idx = update_config(det_rate_list, opt.threshold_config)
-                else:
-                    online_targets = tracker.update_hm(blob, img0, best_model)
+                online_targets = tracker.update(blob, img0_width=img0_width, img0_height=img0_height)
                 end_server_computation = time.time()                   # end time for server computation
                 total_server_time += (end_server_computation - start_server_computation)
                 num_frames += 1
-                print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(frame_id)))
+                print('Running on image: {}'.format(str(frame_id)))
                 online_tlwhs = [t.tlwh for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 online_ids = [t.track_id for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 results.append((frame_id, online_tlwhs, online_ids))
