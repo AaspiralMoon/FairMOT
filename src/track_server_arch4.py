@@ -66,7 +66,36 @@ def main(opt, server, data_root, seqs):
                 frame_id = img_info['frame_id']
                 img = img_info['img']
                 task = img_info['task']
+                id_stracks = img_info.get('id_stracks')
+                tracked_stracks = img_info.get('tracked_stracks')
+                lost_stracks = img_info.get('lost_stracks')
+                removed_stracks = img_info.get('removed_stracks')
+                if id_stracks is not None:
+                    tracker.frame_id = id_stracks
+                    tracker.tracked_stracks = tracked_stracks
+                    tracker.lost_stracks = lost_stracks
+                    tracker.removed_stracks = removed_stracks
                 total_data_size += msg_size
+
+            elif data_type == 'transfer_img':
+                transfer_img_info = data
+                frame_id = transfer_img_info['frame_id']
+                img = transfer_img_info['img']
+                task = transfer_img_info['task']
+                total_data_size += msg_size
+
+            elif data_type == 'require_stracks':
+                id_stracks = tracker.frame_id
+                tracked_stracks = tracker.tracked_stracks
+                lost_stracks= tracker.lost_stracks
+                removed_stracks = tracker.removed_stracks
+                history_info = {'id_stracks': id_stracks, 'tracked_stracks': tracked_stracks, 'lost_stracks': lost_stracks, 'removed_stracks': removed_stracks}
+                start_communication = time.time()
+                data_size = server.send(history_info)
+                end_communication = time.time()
+                total_data_size += data_size
+                total_communication_time += (end_communication - start_communication)
+                continue
 
             elif data_type == 'results_info':
                 results_info = data

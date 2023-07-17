@@ -459,7 +459,7 @@ class JDETracker(object):
             return dets, output_stracks
         return output_stracks
 
-    def update_hm(self, im_blob, img0=None, model_id='full-multiknob', do_object_association=True, img0_width=None, img0_height=None):
+    def update_hm(self, im_blob, img0=None, model_id='full-multiknob', do_object_association=True, img0_width=None, img0_height=None, gen_stracks=False):
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
@@ -635,10 +635,16 @@ class JDETracker(object):
         logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
         logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
-        if model_id == 'full-multiknob':
-            return output_stracks, hm_knob
+        if gen_stracks == False:
+            if model_id == 'full-multiknob':
+                return output_stracks, hm_knob
+            else:
+                return output_stracks
         else:
-            return output_stracks
+            if model_id == 'full-multiknob':
+                return output_stracks, hm_knob, self.frame_id, self.tracked_stracks, self.lost_stracks, self.removed_stracks
+            else:
+                return output_stracks, self.frame_id, self.tracked_stracks, self.lost_stracks, self.removed_stracks
 
     def object_association(self, dets, id_feature):
         self.frame_id += 1
