@@ -14,19 +14,28 @@ import time
 import cv2
 import torch
 import logging
+import ast
 
 from tracking_utils.log import logger
 from tracker.multitracker import JDETracker
 import datasets.dataset.jde as datasets
 from opts import opts
 from track_client_arch1 import Client, pre_processing
+from track_half_multiknob import compare_hms, update_config
 
 def main(opt, client, data_root, seqs):
     logger.setLevel(logging.INFO)
+    imgsz_list = [(1088, 608), (864, 480), (704, 384), (640, 352), (576, 320)]
+    model_list = ['full', 'half', 'quarter']
+    transfer_config_list = [14]                            # if the best config is in this list, do computation on camera
+    configs = []
+    for imgsz in imgsz_list:
+        for m in model_list:
+            configs.append('{}+{}'.format(imgsz, m))
     total_communication_time = 0
     total_client_time = 0
     num_frames = 0
-    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 100]
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 97]
     for seq in seqs:
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
@@ -38,46 +47,44 @@ def main(opt, client, data_root, seqs):
         dataset_info = {'seq': seq, 'img0_width': img0_width, 'img0_height': img0_height, 'frame_rate': frame_rate}
         client.send(('dataset_info', dataset_info))
         client_results = []
-        id_stracks = None
-        tracked_stracks = None
-        lost_stracks = None
-        removed_stracks = None
-        has_received_history_info = False
+        has_received_history_info = True
+        has_sent_history_info = False
         for i, (path, img, img0) in enumerate(dataloader):
             if i < start_frame:
                 continue
             num_frames += 1
             if (i - start_frame) % opt.switch_period == 0:
-                img = pre_processing(img0, do_letterbox=True, do_transformation=False)                                        # full resolution
-                start_client_encoding = time.time()
-                _, img = cv2.imencode('.jpg', img, encode_param)        # encoding
-                end_client_encoding = time.time()
-                total_client_time += (end_client_encoding - start_client_encoding)                    
-                if has_received_history_info:
-                    img_info = {'frame_id': int(i + 1), 'img': img, 'task': 'multiknob', 'id_stracks': id_stracks, 'tracked_stracks': tracked_stracks, 'lost_stracks': lost_stracks, 'removed_stracks': removed_stracks}
-                else:
-                    img_info = {'frame_id': int(i + 1), 'img': img, 'task': 'multiknob'}
-                start_communication = time.time()
-                client.send(('img', img_info))
-                end_communication = time.time()
-                total_communication_time += (end_communication - start_communication)
-                received_data, _ = client.receive()
-                if received_data:
-                    best_imgsz = received_data['best_imgsz']
-                    best_model = received_data['best_model']
-                    do_transfer = received_data['do_transfer']
-                has_received_history_info = False
+                img = pre_processing(img0)
+                blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                print('Running switching...')
+                start_client_computation = time.time()                 # start time for client computation
+                online_targets, hm_knob, id_stracks, tracked_stracks, lost_stracks, removed_stracks = tracker.update_hm(blob, model_id='full-multiknob', img0_width=img0_width, img0_height=img0_height, gen_stracks=True)
+                det_rate_list = compare_hms(hm_knob)                                  # calculate the detection rate
+                best_config_idx = update_config(det_rate_list, opt.threshold_config)
+                end_client_computation = time.time()                   # end time for client computation
+                total_client_time += (end_client_computation - start_client_computation)
+                best_config = configs[best_config_idx]
+                best_imgsz, best_model = best_config.split('+')
+                best_imgsz = ast.literal_eval(best_imgsz)
+                print('Running imgsz: (1088, 608) model: full on image: {}'.format(str(i + 1)))
+                do_transfer = best_config_idx in transfer_config_list          # determine if transfer
+                has_sent_history_info = False
             elif do_transfer:
                 img = pre_processing(img0, best_imgsz, do_letterbox=True, do_transformation=False)
                 start_client_encoding = time.time()
-                _, img = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])         # encoding
+                _, img = cv2.imencode('.jpg', img, encode_param)         # encoding
                 end_client_encoding = time.time()
                 total_client_time += (end_client_encoding - start_client_encoding)
-                img_info = {'frame_id': int(i + 1), 'img': img, 'task': 'regular'}
+                if not has_sent_history_info:
+                    img_info = {'frame_id': int(i + 1), 'img': img, 'best_imgsz': best_imgsz, 'best_model': best_model, 'id_stracks': id_stracks, 'tracked_stracks': tracked_stracks, 'lost_stracks': lost_stracks, 'removed_stracks': removed_stracks}
+                    has_sent_history_info = True
+                else:
+                    img_info = {'frame_id': int(i + 1), 'img': img, 'best_imgsz': best_imgsz, 'best_model': best_model}
                 start_communication = time.time()
                 client.send(('transfer_img', img_info))
                 end_communication = time.time()
                 total_communication_time += (end_communication - start_communication)
+                has_received_history_info = False
             else:
                 if not has_received_history_info:
                     client.send(('require_stracks', True))
@@ -96,17 +103,13 @@ def main(opt, client, data_root, seqs):
                 img = pre_processing(img0, best_imgsz)
                 blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 start_client_computation = time.time()
-                online_targets = tracker.update_hm(blob, img0, best_model)
+                online_targets, id_stracks, tracked_stracks, lost_stracks, removed_stracks = tracker.update_hm(blob, img0, best_model, gen_stracks=True)
                 end_client_computation = time.time()
                 total_client_time += (end_client_computation - start_client_computation)
                 print('Running imgsz: {} model: {} on image: {}'.format(best_imgsz, best_model, str(i + 1)))
                 online_tlwhs = [t.tlwh for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 online_ids = [t.track_id for t in online_targets if t.tlwh[2] * t.tlwh[3] > opt.min_box_area and t.tlwh[2] / t.tlwh[3] <= 1.6]
                 client_results.append((str(i + 1), online_tlwhs, online_ids))
-                id_stracks = tracker.frame_id
-                tracked_stracks = tracker.tracked_stracks
-                lost_stracks = tracker.lost_stracks
-                removed_stracks = tracker.removed_stracks
         results_info = {'client_results': client_results}
         client.send(('results_info', results_info))
     
